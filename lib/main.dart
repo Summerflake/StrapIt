@@ -42,7 +42,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
   @override
   void initState() {
     super.initState();
-    // Auto-fade every 3-4 seconds
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
       setState(() {
         _currentIdx = (_currentIdx + 1) % _heroData.length;
@@ -61,7 +60,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Background Image Slider
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 1000),
@@ -78,8 +76,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
               ),
             ),
           ),
-
-          // 2. Content Overlay
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -109,8 +105,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
               ],
             ),
           ),
-
-          // 3. Frosted Glass Header with Hover Effects
           Positioned(
             top: 0,
             left: 0,
@@ -131,7 +125,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
                           fontWeight: FontWeight.bold,
                           color: Colors.white)),
                   const Spacer(),
-                  // Replaced _navItem with HoverNavBarItem
                   const HoverNavBarItem(title: "About Us"),
                   const HoverNavBarItem(title: "Product"),
                   const HoverNavBarItem(title: "Features"),
@@ -157,8 +150,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
   }
 }
 
-// --- Add this new class at the bottom of main.dart ---
-
 class HoverNavBarItem extends StatefulWidget {
   final String title;
 
@@ -182,11 +173,9 @@ class _HoverNavBarItemState extends State<HoverNavBarItem> {
         margin: const EdgeInsets.symmetric(horizontal: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          // Background becomes slightly visible on hover
           color:
               _isHovered ? Colors.white.withOpacity(0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          // Optional: Add a subtle border on hover
           border: Border.all(
             color:
                 _isHovered ? Colors.white.withOpacity(0.3) : Colors.transparent,
@@ -197,7 +186,6 @@ class _HoverNavBarItemState extends State<HoverNavBarItem> {
           widget.title,
           style: TextStyle(
             fontSize: 16,
-            // Text color becomes brighter/blue on hover
             color: _isHovered ? const Color.fromARGB(255, 131, 176, 255) : Colors.white,
             fontWeight: _isHovered ? FontWeight.w600 : FontWeight.normal,
           ),
