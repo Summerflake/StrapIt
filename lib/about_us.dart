@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'nav_bar.dart';
 
 class AboutUsPage extends StatefulWidget {
@@ -12,7 +13,6 @@ class AboutUsPage extends StatefulWidget {
 }
 
 class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin {
-  // Scroll Controller
   final ScrollController _scrollController = ScrollController();
 
   // Animation Triggers
@@ -40,254 +40,186 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
   void _triggerTeamAnimation() {
     for (int i = 0; i < 5; i++) {
       Timer(Duration(milliseconds: 300 * (i + 1)), () {
-        if (mounted) {
-          setState(() {
-            _visibleCards[i] = true;
-          });
-        }
+        if (mounted) setState(() => _visibleCards[i] = true);
       });
     }
   }
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-
     double offset = _scrollController.offset;
-    double maxScroll = _scrollController.position.maxScrollExtent;
-
-    // --- TRIGGER THRESHOLDS ---
+    
     if (offset > 100 && !_showWhoWeAre) setState(() => _showWhoWeAre = true);
-    if (offset > 400 && !_showMission) setState(() => _showMission = true);
-    if (offset > 700 && !_showProblem) setState(() => _showProblem = true);
-    if (offset > 1000 && !_showSocial) setState(() => _showSocial = true);
-
-    // --- SAFETY TRIGGER (Force show if at bottom) ---
-    if (offset >= maxScroll - 50) {
-      if (!_showSocial || !_showProblem) {
-        setState(() {
-          _showWhoWeAre = true;
-          _showMission = true;
-          _showProblem = true;
-          _showSocial = true;
-        });
-      }
-    }
+    if (offset > 500 && !_showMission) setState(() => _showMission = true);
+    if (offset > 900 && !_showProblem) setState(() => _showProblem = true);
+    if (offset > 1300 && !_showSocial) setState(() => _showSocial = true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // --- LAYER 0: BACKGROUND ---
+          // --- LAYER 0: BACKGROUND (Blobs + Complex Particles) ---
           const Positioned.fill(child: AnimatedBackground()),
 
           // --- LAYER 1: CONTENT ---
           Positioned.fill(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  const NavBar(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                bool isMobile = constraints.maxWidth < 900;
+                double horizontalPadding = isMobile ? 20 : 60;
 
-                  // ------------------------------------------
-                  // 1. TEAM INTRODUCTION
-                  // ------------------------------------------
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40, bottom: 60),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildAnimatedCard(0, "XinYu", "Project Manager &\nData Science Lead", "Owns delivery governance and Machine-Learning training."),
-                            _buildAnimatedCard(1, "Jiachuan", "Development Lead", "Delivering UI/UX and API integration."),
-                            _buildAnimatedCard(2, "XiaoYu", "Community Manager", "Runs user analytics, A/B testing, and UAT prior to CI/CD releases."),
-                            _buildAnimatedCard(3, "BangYan", "Marketing Lead", "Leading go-to-market strategy and monetization."),
-                            _buildAnimatedCard(4, "ChengAo", "R&D Lead", "In charge of Application architecture and feature alignment."),
-                          ],
-                        ),
+                return SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    children: [
+                      const NavBar(isLightMode: true),
+
+                      // 1. TEAM INTRODUCTION
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(horizontalPadding, 40, horizontalPadding, 80),
+                        child: isMobile 
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for(int i=0; i<5; i++)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 20),
+                                    child: _buildAnimatedCard(i),
+                                  )
+                              ],
+                            )
+                          : SizedBox(
+                            width: double.infinity,
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(child: _buildAnimatedCard(0)),
+                                  Expanded(child: _buildAnimatedCard(1)),
+                                  Expanded(child: _buildAnimatedCard(2)),
+                                  Expanded(child: _buildAnimatedCard(3)),
+                                  Expanded(child: _buildAnimatedCard(4)),
+                                ],
+                              ),
+                            ),
+                          ),
                       ),
-                    ),
-                  ),
 
-                  // ------------------------------------------
-                  // 2. WHO WE ARE
-                  // ------------------------------------------
-                  _buildSectionHeader("Who We Are"),
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 800),
-                    opacity: _showWhoWeAre ? 1.0 : 0.0,
-                    child: AnimatedSlide(
-                      duration: const Duration(milliseconds: 800),
-                      curve: Curves.easeOutQuad,
-                      offset: _showWhoWeAre ? Offset.zero : const Offset(0, 0.1),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20),
-                        child: RichText(
+                      // 2. WHO WE ARE
+                      _buildScrollSection(
+                        isMobile: isMobile,
+                        trigger: _showWhoWeAre,
+                        isImageRight: true,
+                        imagePath: "assets/image/aboutus.png",
+                        title: "Who We Are",
+                        content: RichText(
                           text: TextSpan(
-                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w300, height: 1.5, fontFamily: 'Roboto'),
+                            style: const TextStyle(color: Colors.black87, fontSize: 20, height: 1.6, fontFamily: 'Montserrat'),
                             children: [
                               const TextSpan(text: "We are a team driven by a simple belief: personal safety should be "),
                               WidgetSpan(
                                 alignment: PlaceholderAlignment.baseline,
                                 baseline: TextBaseline.alphabetic,
-                                child: AnimatedUnderlineText(text: "accessible, adaptable, and effortless.", trigger: _showWhoWeAre, delay: 500),
+                                child: AnimatedUnderlineText(text: "accessible and effortless.", trigger: _showWhoWeAre, delay: 500),
                               ),
-                              const TextSpan(text: "\n\nStrapIt was created to bridge the gap between expensive smart locks and basic mechanical devices, offering reliable security without complexity or permanent installation.\n\n"),
-                              const TextSpan(text: "Designed by students and engineers focused on affordable, human-scale security.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.white70)),
+                              const TextSpan(text: "\n\nStrapIt bridges the gap between expensive smart locks and basic mechanical devices. Designed by engineers for affordable, human-scale security."),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 80),
-
-                  // ------------------------------------------
-                  // 3. OUR MISSION
-                  // ------------------------------------------
-                  _buildSectionHeader("Our Mission"),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 1500),
-                        curve: Curves.easeInOut,
-                        width: _showMission ? 800 : 0,
-                        height: 2,
-                        decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.blueAccent, Colors.blueAccent.withOpacity(0.0)])),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStaggeredText("Our mission is to empower people to feel secure wherever they stay — at home, in rentals, or while travelling —", delay: 200, isVisible: _showMission),
-                        const SizedBox(height: 10),
-                        _buildStaggeredText("by delivering a portable, user-controlled security solution that combines physical reinforcement with smart alert technology.", delay: 1000, isVisible: _showMission),
-                        const SizedBox(height: 30),
-                        _buildStaggeredText("Security should travel with you. StrapIt makes that possible.", delay: 1800, isVisible: _showMission, isBold: true),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 100),
-
-                  // ------------------------------------------
-                  // 4. THE PROBLEM WE ADDRESS
-                  // ------------------------------------------
-                  _buildSectionHeader("The Problem We Address"),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20),
-                    child: _buildStaggeredText(
-                      "Urban living, frequent travel, and shared accommodations have increased exposure to unauthorized entry. Existing solutions force users to choose between high cost, permanent installation, or limited protection. Many people remain unprotected simply because current locks are not portable, affordable, or adaptable.",
-                      delay: 0,
-                      isVisible: _showProblem,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  
-                  // NEW IMAGE LAYOUT
-                  FractionallySizedBox(
-                    widthFactor: 0.85,
-                    child: Column(
-                      children: [
-                        // Row for the first two images with FIXED HEIGHT
-                        SizedBox(
-                          height: 350, 
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch, 
-                            children: [
-                              Expanded(
-                                child: _buildAnimatedImage("assets/image/city.jpg", 0, _showProblem),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: _buildAnimatedImage("assets/image/aboutus.png", 300, _showProblem),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Bottom image (Statistic)
-                        SizedBox(
-                          height: 350,
-                          width: double.infinity,
-                          child: _buildAnimatedImage("assets/image/statistic.png", 600, _showProblem),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 100),
-
-                  // ------------------------------------------
-                  // 5. SOCIAL CREDIBILITY
-                  // ------------------------------------------
-                  _buildSectionHeader("Social Credibility"),
-                  
-                  // Text Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30),
-                    child: AnimatedOpacity(
-                      opacity: _showSocial ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 1000),
-                      child: RichText(
-                        textAlign: TextAlign.left,
-                        text: TextSpan(
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26, 
-                            fontWeight: FontWeight.w300,
-                            height: 2.0, 
-                            fontFamily: 'Roboto'
-                          ),
+                      // 3. OUR MISSION
+                      _buildScrollSection(
+                        isMobile: isMobile,
+                        trigger: _showMission,
+                        isImageRight: false,
+                        imagePath: "assets/image/city.jpg",
+                        title: "Our Mission",
+                        content: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const TextSpan(text: "Targeting "),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: _buildScalingKeyword(" 20–30-year-old ", _showSocial, 200),
-                            ),
-                            const TextSpan(text: " individuals living alone, as well as tourists seeking secure and flexible security solutions.\n\nStrapIt will reach users through "),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: _buildScalingKeyword("Instagram ", _showSocial, 600),
-                            ),
-                            const TextSpan(text: ", "),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: _buildScalingKeyword(" TikTok", _showSocial, 800),
-                            ),
-                            const TextSpan(text: " and targeted digital and travel-oriented channels."),
+                            _buildStaggeredText("Empowering people to feel secure wherever they stay — at home, rentals, or while traveling.", delay: 200, isVisible: _showMission),
+                            const SizedBox(height: 20),
+                            _buildStaggeredText("Security should travel with you. StrapIt makes that possible.", delay: 600, isVisible: _showMission, isBold: true),
                           ],
                         ),
                       ),
-                    ),
-                  ),
 
-                  // --- NEW SOCIAL IMAGE ADDED HERE ---
-                  const SizedBox(height: 20),
-                  FractionallySizedBox(
-                    widthFactor: 0.85,
-                    child: SizedBox(
-                      height: 400, // Fixed height banner style
-                      child: _buildAnimatedImage("assets/image/social.jpg", 1200, _showSocial), // Delayed slightly to appear after text
-                    ),
-                  ),
+                      // 4. THE PROBLEM
+                      _buildScrollSection(
+                        isMobile: isMobile,
+                        trigger: _showProblem,
+                        isImageRight: true,
+                        imagePath: "assets/image/statistic.png",
+                        title: "The Problem",
+                        content: _buildStaggeredText(
+                          "Urban living and shared accommodations have increased exposure to unauthorized entry. Existing solutions are either too expensive or require permanent installation. Many remain unprotected simply because current locks are not portable.",
+                          delay: 0,
+                          isVisible: _showProblem,
+                        ),
+                      ),
 
-                  const SizedBox(height: 150),
-                ],
-              ),
+                      const SizedBox(height: 100),
+
+                      // 5. SOCIAL CREDIBILITY
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader("Social Credibility"),
+                            const SizedBox(height: 30),
+                            AnimatedOpacity(
+                              opacity: _showSocial ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 1000),
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w300, height: 1.8),
+                                  children: [
+                                    const TextSpan(text: "Targeting "),
+                                    WidgetSpan(child: _buildScalingKeyword(" 20–30s ", _showSocial, 200)),
+                                    const TextSpan(text: " living alone and tourists seeking flexible security. Reaching users through "),
+                                    WidgetSpan(child: _buildScalingKeyword(" Instagram & TikTok ", _showSocial, 600)),
+                                    const TextSpan(text: " and digital channels."),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 50),
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 1000),
+                              opacity: _showSocial ? 1.0 : 0.0,
+                              child: AnimatedSlide(
+                                offset: _showSocial ? Offset.zero : const Offset(0, 0.1),
+                                duration: const Duration(milliseconds: 1000),
+                                curve: Curves.easeOutQuad,
+                                child: Container(
+                                  width: double.infinity,
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 30, offset: const Offset(0, 15))],
+                                  ),
+                                  child: Image.asset(
+                                    "assets/image/social.jpg", 
+                                    fit: BoxFit.cover,
+                                    height: isMobile ? 250 : 400,
+                                    width: double.infinity,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 150),
+                    ],
+                  ),
+                );
+              }
             ),
           ),
         ],
@@ -295,48 +227,90 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
     );
   }
 
-  // --- HELPERS ---
-
-  Widget _buildAnimatedImage(String assetPath, int delay, bool trigger) {
-    return FutureBuilder(
-      future: Future.delayed(Duration(milliseconds: delay)),
-      builder: (context, snapshot) {
-          final bool isReady = trigger && (delay == 0 || snapshot.connectionState == ConnectionState.done);
-          
-          return AnimatedOpacity(
-            duration: const Duration(milliseconds: 800),
-            opacity: isReady ? 1.0 : 0.0,
-            curve: Curves.easeOut,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutQuad,
-              transform: Matrix4.translationValues(0, isReady ? 0 : 50, 0), 
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    )
-                  ]
-                ),
-                child: Image.asset(
-                  assetPath,
-                  fit: BoxFit.cover, 
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white10,
-                    child: Center(child: Text("Missing: $assetPath", style: const TextStyle(color: Colors.red))),
+  // --- REUSABLE SECTION BUILDER ---
+  Widget _buildScrollSection({
+    required bool isMobile,
+    required bool trigger,
+    required bool isImageRight,
+    required String imagePath,
+    required String title,
+    required Widget content,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 60, vertical: 60),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 1000),
+        opacity: trigger ? 1.0 : 0.0,
+        curve: Curves.easeOut,
+        child: AnimatedSlide(
+          duration: const Duration(milliseconds: 1000),
+          offset: trigger ? Offset.zero : const Offset(0, 0.1),
+          curve: Curves.easeOutQuad,
+          child: isMobile 
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   _buildSectionHeader(title),
+                   const SizedBox(height: 20),
+                   _buildImageContainer(imagePath),
+                   const SizedBox(height: 30),
+                   content,
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (!isImageRight) ...[
+                    Expanded(child: _buildImageContainer(imagePath)),
+                    const SizedBox(width: 60),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildSectionHeader(title),
+                        const SizedBox(height: 30),
+                        content,
+                      ],
+                    ),
                   ),
-                ),
+                  if (isImageRight) ...[
+                    const SizedBox(width: 60),
+                    Expanded(child: _buildImageContainer(imagePath)),
+                  ],
+                ],
               ),
-            ),
-          );
-      }
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageContainer(String path) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.asset(
+          path,
+          fit: BoxFit.cover, 
+          errorBuilder: (c, e, s) => Container(
+            height: 200, 
+            color: Colors.grey[100], 
+            child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))
+          ),
+        ),
+      ),
     );
   }
 
@@ -345,25 +319,22 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
       future: Future.delayed(Duration(milliseconds: delay)),
       builder: (context, snapshot) {
         bool showEffect = trigger && snapshot.connectionState == ConnectionState.done;
-        
         return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 1.0, end: showEffect ? 1.15 : 1.0),
+          tween: Tween(begin: 1.0, end: showEffect ? 1.1 : 1.0),
           duration: const Duration(milliseconds: 600),
           curve: Curves.elasticOut,
           builder: (context, scale, child) {
             return Transform.scale(
               scale: scale,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+
                 child: Text(
                   text,
                   style: TextStyle(
-                    color: showEffect ? Colors.cyanAccent : Colors.white,
-                    fontSize: 26,
-                    fontWeight: showEffect ? FontWeight.bold : FontWeight.w300,
-                    shadows: showEffect ? [
-                      const Shadow(blurRadius: 10, color: Colors.cyan, offset: Offset(0,0))
-                    ] : [],
+                    color: showEffect ? Colors.blueAccent : Colors.black87,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -381,54 +352,45 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
          final showNow = isVisible && snapshot.connectionState == ConnectionState.done;
          return AnimatedOpacity(
            opacity: showNow ? 1.0 : 0.0,
-           duration: const Duration(milliseconds: 600),
-           child: AnimatedPadding(
-             duration: const Duration(milliseconds: 600),
-             padding: showNow ? EdgeInsets.zero : const EdgeInsets.only(top: 20),
-             child: Text(
-                text,
-                style: TextStyle(
-                  color: isBold ? Colors.blueAccent : Colors.white,
-                  fontSize: isBold ? 26 : 24,
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.w300,
-                  height: 1.5,
-                ),
+           duration: const Duration(milliseconds: 800),
+           child: Text(
+              text,
+              style: TextStyle(
+                color: isBold ? Colors.blueAccent : Colors.black87,
+                fontSize: isBold ? 22 : 20,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w300,
+                height: 1.5,
               ),
-           ),
+            ),
          );
       }
     );
   }
 
-  Widget _buildAnimatedCard(int index, String name, String role, String description) {
-    return Expanded(
-      child: AnimatedOpacity(
-        opacity: _visibleCards[index] ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeOut,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: TeamMemberCard(name: name, role: role, description: description),
-        ),
+  Widget _buildAnimatedCard(int i) {
+    List<String> names = ["XinYu", "Jiachuan", "XiaoYu", "BangYan", "ChengAo"];
+    List<String> roles = ["Project Manager", "Dev Lead", "Community", "Marketing", "R&D Lead"];
+    List<String> descs = ["Data Science & Governance", "UI/UX & API Integration", "Analytics & UAT", "Strategy & Monetization", "Architecture & Features"];
+
+    return AnimatedOpacity(
+      opacity: _visibleCards[i] ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOut,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: TeamMemberCard(name: names[i], role: roles[i], description: descs[i]),
       ),
     );
   }
 
   Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title.toUpperCase(),
-          style: const TextStyle(
-            color: Colors.blueAccent,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-            shadows: [Shadow(blurRadius: 10.0, color: Colors.blueAccent, offset: Offset(0, 0))],
-          ),
-        ),
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        color: Colors.blueAccent,
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 3,
       ),
     );
   }
@@ -465,7 +427,7 @@ class _AnimatedUnderlineTextState extends State<AnimatedUnderlineText> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Text(widget.text, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w400, height: 1.5)),
+        Text(widget.text, style: const TextStyle(color: Colors.black87, fontSize: 20, fontWeight: FontWeight.w400, height: 1.6)),
         Positioned(
           bottom: 2, left: 0, right: 0,
           child: LayoutBuilder(
@@ -477,7 +439,7 @@ class _AnimatedUnderlineTextState extends State<AnimatedUnderlineText> {
                   curve: Curves.easeOut,
                   height: 2,
                   width: constraints.maxWidth * _widthFactor,
-                  color: Colors.cyanAccent,
+                  color: Colors.blueAccent.withOpacity(0.5),
                 ),
               );
             },
@@ -513,32 +475,34 @@ class _TeamMemberCardState extends State<TeamMemberCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
-        transform: Matrix4.translationValues(0, _isHovered ? -15 : 0, 0),
-        padding: const EdgeInsets.all(24),
+        transform: Matrix4.translationValues(0, _isHovered ? -10 : 0, 0),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(_isHovered ? 0.08 : 0.03),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _isHovered ? Colors.blueAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1), width: 1),
-          boxShadow: _isHovered ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))] : [],
+          border: Border.all(color: _isHovered ? Colors.blueAccent : Colors.grey.withOpacity(0.1), width: 1),
+          boxShadow: [
+             BoxShadow(
+               color: _isHovered ? Colors.blueAccent.withOpacity(0.1) : Colors.black.withOpacity(0.03),
+               blurRadius: 20, 
+               offset: const Offset(0, 10)
+             )
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 50, height: 50,
-              decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
-              child: Center(child: Text(widget.name[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20))),
+            CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              radius: 24,
+              child: Text(widget.name[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 20),
-            Text(widget.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            Text(widget.name, style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
-            Text(widget.role, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-            const SizedBox(height: 20),
-            AnimatedOpacity(
-              opacity: _isHovered ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: Text(widget.description, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
-            ),
+            Text(widget.role, style: const TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 15),
+            Text(widget.description, style: const TextStyle(color: Colors.black54, fontSize: 12, height: 1.4)),
           ],
         ),
       ),
@@ -547,31 +511,43 @@ class _TeamMemberCardState extends State<TeamMemberCard> {
 }
 
 // ---------------------------------------------------------------------------
-// ANIMATED BACKGROUND
+// ANIMATED BACKGROUND (BLOBS + RESPONSIVE PARTICLES)
 // ---------------------------------------------------------------------------
-class AnimatedBackground extends StatefulWidget {
+class AnimatedBackground extends StatelessWidget {
   const AnimatedBackground({super.key});
 
   @override
-  State<AnimatedBackground> createState() => _AnimatedBackgroundState();
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const _BlobBackground(),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return _ParticleOverlay(width: constraints.maxWidth, height: constraints.maxHeight);
+          },
+        ),
+      ],
+    );
+  }
 }
 
-class _AnimatedBackgroundState extends State<AnimatedBackground> {
+class _BlobBackground extends StatefulWidget {
+  const _BlobBackground();
+
+  @override
+  State<_BlobBackground> createState() => _BlobBackgroundState();
+}
+
+class _BlobBackgroundState extends State<_BlobBackground> {
   Alignment _align1 = Alignment.topLeft;
   Alignment _align2 = Alignment.bottomRight;
   Alignment _align3 = Alignment.topRight;
-  Alignment _align4 = Alignment.bottomLeft;
-  Alignment _align5 = Alignment.center;
-  Alignment _align6 = Alignment.topCenter;
-
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startAnimation();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startAnimation());
   }
 
   @override
@@ -581,15 +557,12 @@ class _AnimatedBackgroundState extends State<AnimatedBackground> {
   }
 
   void _startAnimation() {
-    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
           _align1 = _randomAlignment();
           _align2 = _randomAlignment();
           _align3 = _randomAlignment();
-          _align4 = _randomAlignment();
-          _align5 = _randomAlignment();
-          _align6 = _randomAlignment();
         });
       }
     });
@@ -602,18 +575,14 @@ class _AnimatedBackgroundState extends State<AnimatedBackground> {
 
   @override
   Widget build(BuildContext context) {
-    const double blurSigma = 100.0; 
     return Stack(
       children: [
-        Container(color: const Color(0xFF151515)),
-        _buildBlob(_align1, Colors.blueAccent.withOpacity(0.4), 400),
-        _buildBlob(_align2, Colors.purple.withOpacity(0.4), 400),
-        _buildBlob(_align3, Colors.cyanAccent.withOpacity(0.3), 300),
-        _buildBlob(_align4, Colors.pinkAccent.withOpacity(0.25), 300),
-        _buildBlob(_align5, Colors.indigo.withOpacity(0.5), 250),
-        _buildBlob(_align6, Colors.deepOrange.withOpacity(0.2), 200),
+        Container(color: Colors.white),
+        _buildBlob(_align1, Colors.blueAccent.withOpacity(0.05), 500),
+        _buildBlob(_align2, Colors.purpleAccent.withOpacity(0.05), 400),
+        _buildBlob(_align3, Colors.cyanAccent.withOpacity(0.05), 300),
         BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+          filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
           child: Container(color: Colors.transparent),
         ),
       ],
@@ -622,10 +591,213 @@ class _AnimatedBackgroundState extends State<AnimatedBackground> {
 
   Widget _buildBlob(Alignment alignment, Color color, double size) {
     return AnimatedAlign(
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 5),
       curve: Curves.easeInOutSine,
       alignment: alignment,
       child: Container(width: size, height: size, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
     );
+  }
+}
+
+// --- COMPLEX RESPONSIVE PARTICLE SYSTEM ---
+
+class Particle {
+  Offset position;
+  Offset velocity;
+  double radius;
+
+  Particle({required this.position, required this.velocity, this.radius = 2.0});
+}
+
+class _ParticleOverlay extends StatefulWidget {
+  final double width;
+  final double height;
+
+  const _ParticleOverlay({required this.width, required this.height});
+
+  @override
+  State<_ParticleOverlay> createState() => _ParticleOverlayState();
+}
+
+class _ParticleOverlayState extends State<_ParticleOverlay> with SingleTickerProviderStateMixin {
+  late Ticker _ticker;
+  final List<Particle> _particles = [];
+  final Random _random = Random();
+  
+  // Dynamic Settings
+  double _connectionDistance = 150.0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initParticles();
+    
+    _ticker = createTicker((elapsed) {
+      _updateParticles();
+    });
+    _ticker.start();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ParticleOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if ((widget.width - oldWidget.width).abs() > 50 || (widget.height - oldWidget.height).abs() > 50) {
+      _initParticles();
+    }
+  }
+
+  void _initParticles() {
+    _particles.clear();
+
+    // ---------------------------------------------------------
+    // RESPONSIVE LOGIC
+    // ---------------------------------------------------------
+    bool isMobile = widget.width < 900;
+
+    // Adjusted for "Complex" mobile view
+    // Mobile: 35 dots, 110 distance -> Good balance for finding triangles
+    int particleCount = isMobile ? 35 : 60; 
+    _connectionDistance = isMobile ? 110.0 : 160.0;
+    double speedBase = 0.5;
+
+    for (int i = 0; i < particleCount; i++) {
+      _particles.add(Particle(
+        position: Offset(
+          _random.nextDouble() * widget.width,
+          _random.nextDouble() * widget.height,
+        ),
+        velocity: Offset(
+          (_random.nextDouble() - 0.5) * speedBase,
+          (_random.nextDouble() - 0.5) * speedBase,
+        ),
+        radius: _random.nextDouble() * 2 + 1, 
+      ));
+    }
+  }
+
+  void _updateParticles() {
+    setState(() {
+      for (var particle in _particles) {
+        // Move
+        double newX = particle.position.dx + particle.velocity.dx;
+        double newY = particle.position.dy + particle.velocity.dy;
+
+        // Bounce off edges
+        if (newX < 0 || newX > widget.width) {
+          particle.velocity = Offset(-particle.velocity.dx, particle.velocity.dy);
+          newX = newX.clamp(0.0, widget.width);
+        }
+        if (newY < 0 || newY > widget.height) {
+          particle.velocity = Offset(particle.velocity.dx, -particle.velocity.dy);
+          newY = newY.clamp(0.0, widget.height);
+        }
+
+        particle.position = Offset(newX, newY);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: ParticleNetworkPainter(
+        particles: _particles,
+        connectionDistance: _connectionDistance, 
+      ),
+      size: Size(widget.width, widget.height),
+    );
+  }
+}
+
+class ParticleNetworkPainter extends CustomPainter {
+  final List<Particle> particles;
+  final double connectionDistance;
+
+  ParticleNetworkPainter({required this.particles, required this.connectionDistance});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint dotPaint = Paint()
+      ..color = Colors.blueAccent.withOpacity(0.4)
+      ..style = PaintingStyle.fill;
+
+    final Paint linePaint = Paint()
+      ..color = Colors.blueAccent
+      ..strokeWidth = 1.0;
+
+    final Paint fillPaint = Paint()
+      ..color = Colors.blueAccent.withOpacity(0.05) // Faint fill for shapes
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < particles.length; i++) {
+      final p1 = particles[i];
+      
+      // 1. Draw Dot
+      canvas.drawCircle(p1.position, p1.radius, dotPaint);
+
+      // Track connection count to fix "lonely dots"
+      int connections = 0;
+      double closestDist = double.infinity;
+      Particle? closestNeighbor;
+
+      // 2. Draw Lines & Triangles
+      for (int j = i + 1; j < particles.length; j++) {
+        final p2 = particles[j];
+        final double dist = (p1.position - p2.position).distance;
+        
+        // Track closest neighbor even if outside range
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestNeighbor = p2;
+        }
+
+        // Standard Connection
+        if (dist < connectionDistance) {
+          connections++;
+          
+          // Draw Line
+          final double opacity = (1 - (dist / connectionDistance)).clamp(0.0, 1.0) * 0.3;
+          linePaint.color = Colors.blueGrey.withOpacity(opacity);
+          canvas.drawLine(p1.position, p2.position, linePaint);
+
+          // 3. COMPLEX SHAPE LOGIC: TRIANGLE FILL
+          // Check if p1 and p2 share a common neighbor p3
+          for (int k = j + 1; k < particles.length; k++) {
+            final p3 = particles[k];
+            final double dist13 = (p1.position - p3.position).distance;
+            final double dist23 = (p2.position - p3.position).distance;
+
+            // If a triangle exists (all 3 connected)
+            if (dist13 < connectionDistance && dist23 < connectionDistance) {
+              final Path path = Path()
+                ..moveTo(p1.position.dx, p1.position.dy)
+                ..lineTo(p2.position.dx, p2.position.dy)
+                ..lineTo(p3.position.dx, p3.position.dy)
+                ..close();
+              
+              canvas.drawPath(path, fillPaint);
+            }
+          }
+        }
+      }
+
+      // 4. LONELY DOT FIX
+      // If a dot has no connections, force a faint line to its nearest neighbor
+      if (connections == 0 && closestNeighbor != null) {
+         linePaint.color = Colors.blueGrey.withOpacity(0.05); // Very faint
+         canvas.drawLine(p1.position, closestNeighbor.position, linePaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ParticleNetworkPainter oldDelegate) {
+    return true; 
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'nav_bar.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const StrapitApp());
@@ -14,7 +15,10 @@ class StrapitApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Strapit - Secure Anywhere',
-      theme: ThemeData(brightness: Brightness.dark),
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        textTheme: GoogleFonts.montserratTextTheme(), // Applied globally
+      ),
       home: const MainLandingPage(),
     );
   }
@@ -60,6 +64,7 @@ class _MainLandingPageState extends State<MainLandingPage> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background Images
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 1000),
@@ -76,36 +81,50 @@ class _MainLandingPageState extends State<MainLandingPage> {
               ),
             ),
           ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "SECURE ANY DOOR",
-                  style: TextStyle(
-                    fontSize: 64,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                    color: Colors.white,
+          
+          // Responsive Center Content
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                bool isMobile = constraints.maxWidth < 600;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "SECURE ANY DOOR",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isMobile ? 36 : 64, // Responsive Font Size
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: isMobile ? 1 : 2,
+                          color: Colors.white,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: Text(
+                          "Perfect for ${_heroData[_currentIdx]['label']}",
+                          key: ValueKey<String>(_heroData[_currentIdx]['label']!),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: isMobile ? 18 : 28, // Responsive Font Size
+                            fontWeight: FontWeight.w300,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 20),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: Text(
-                    "Perfect for ${_heroData[_currentIdx]['label']}",
-                    key: ValueKey<String>(_heroData[_currentIdx]['label']!),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+                );
+              }
             ),
           ),
-          // Replaced manual header with the reusable NavBar
+
+          // Nav Bar
           const Positioned(
             top: 0,
             left: 0,
