@@ -19,6 +19,10 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
   bool _showFeature3 = false;
   bool _showWhy = false;
 
+  // Notification State
+  bool _showNotificationOverlay = false;
+  bool _hasShownNotification = false; // Ensures it only pops up once per session
+
   @override
   void initState() {
     super.initState();
@@ -33,8 +37,24 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
     if (!_scrollController.hasClients) return;
     double offset = _scrollController.offset;
     
-    // Adjust thresholds based on your layout needs
-    if (offset > 400 && !_showFeature2) setState(() => _showFeature2 = true);
+    // Feature 2 (Intrusion Alarm) Threshold
+    if (offset > 400) {
+      if (!_showFeature2) setState(() => _showFeature2 = true);
+      
+      // Trigger Notification Popup (Once)
+      if (!_hasShownNotification) {
+        setState(() {
+          _showNotificationOverlay = true;
+          _hasShownNotification = true;
+        });
+        
+        // Auto-hide notification after 5 seconds
+        Timer(const Duration(seconds: 5), () {
+          if (mounted) setState(() => _showNotificationOverlay = false);
+        });
+      }
+    }
+
     if (offset > 900 && !_showFeature3) setState(() => _showFeature3 = true);
     if (offset > 1300 && !_showWhy) setState(() => _showWhy = true);
   }
@@ -49,23 +69,24 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Reuse background from About Us
-          const Positioned.fill(child: AnimatedBackground()),
-          
-          Positioned.fill(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  bool isMobile = constraints.maxWidth < 900;
-                  double horizontalPadding = isMobile ? 20 : 60;
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isMobile = constraints.maxWidth < 900;
+          double horizontalPadding = isMobile ? 20 : 60;
 
-                  return Column(
+          return Stack(
+            children: [
+              // Reuse background from About Us
+              const Positioned.fill(child: AnimatedBackground()),
+              
+              // MAIN SCROLLABLE CONTENT
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
                     children: [
                       // NavBar
-                      const NavBar(isLightMode: true),
+                      const NavBar(),
 
                       const SizedBox(height: 60),
                       
@@ -96,7 +117,6 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
                         ],
                         // Custom Animation: Strap Tightening / Clamp
                         visual: const StrapClampAnimation(),
-                        // ADDED: Specific image for Feature 1
                         imagePath: 'assets/image/human.jpg', 
                       ),
 
@@ -113,9 +133,7 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
                           "Alarm rings continuously until disabled via app",
                           "Forces intruders to leave immediately"
                         ],
-                        // Custom Animation: Notification Pop-up
-                        visual: const NotificationSlideAnimation(),
-                        // ADDED: Specific image for Feature 2
+                        // REMOVED: visual argument so text shifts left
                         imagePath: 'assets/image/crime.jpg',
                       ),
 
@@ -134,7 +152,6 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
                         ],
                         // Custom Animation: App Toggle Button
                         visual: const AppToggleAnimation(),
-                        // ADDED: Specific image for Feature 3
                         imagePath: 'assets/image/dontknow.jpg',
                       ),
 
@@ -187,12 +204,20 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
 
                       const SizedBox(height: 150),
                     ],
-                  );
-                }
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+
+              // ---------------------------------------------------------
+              // GLOBAL NOTIFICATION OVERLAY
+              // ---------------------------------------------------------
+              GlobalNotificationOverlay(
+                isVisible: _showNotificationOverlay,
+                isMobile: isMobile,
+              ),
+            ],
+          );
+        }
       ),
     );
   }
@@ -203,11 +228,11 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
     required bool isImageRight,
     required String title,
     required List<String> descriptionPoints,
-    required Widget visual,
-    required String imagePath, // ADDED: New parameter for the JPG
+    Widget? visual, // CHANGED: Made optional
+    required String imagePath,
   }) {
     // We scale the visual using FittedBox to ensure it fits on small screens
-    Widget scalableVisual = FittedBox(fit: BoxFit.scaleDown, child: visual);
+    Widget? scalableVisual = visual != null ? FittedBox(fit: BoxFit.scaleDown, child: visual) : null;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 60, vertical: 80),
@@ -221,28 +246,29 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
           child: isMobile 
             ? Column(
                 children: [
-                   scalableVisual,
-                   const SizedBox(height: 40),
-                   // Pass imagePath to text content
+                   if (scalableVisual != null) ...[
+                     scalableVisual,
+                     const SizedBox(height: 40),
+                   ],
                    _buildTextContent(title, descriptionPoints, imagePath),
                 ],
               )
             : Row(
-                crossAxisAlignment: CrossAxisAlignment.start, // Align to top
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // IF VISUAL LEFT
-                  if (!isImageRight) ...[
+                  if (!isImageRight && scalableVisual != null) ...[
                     Expanded(child: Center(child: scalableVisual)),
                     const SizedBox(width: 80),
                   ],
 
-                  // TEXT CONTENT (Now includes the JPG at bottom)
+                  // TEXT CONTENT
                   Expanded(
                     child: _buildTextContent(title, descriptionPoints, imagePath),
                   ),
 
                   // IF VISUAL RIGHT
-                  if (isImageRight) ...[
+                  if (isImageRight && scalableVisual != null) ...[
                     const SizedBox(width: 80),
                     Expanded(child: Center(child: scalableVisual)),
                   ],
@@ -289,16 +315,12 @@ class _FeaturesPageState extends State<FeaturesPage> with TickerProviderStateMix
             ],
           ),
         )),
-        
-        // ------------------------------------------------------
-        // ADDED: The Image below the text bullets
-        // ------------------------------------------------------
         const SizedBox(height: 30),
         ClipRRect(
           borderRadius: BorderRadius.circular(15),
           child: Image.asset(
             imagePath,
-            height: 250, // Fixed height for consistency
+            height: 250, 
             width: double.infinity,
             fit: BoxFit.cover, 
             errorBuilder: (context, error, stackTrace) {
@@ -361,7 +383,6 @@ class _StrapClampAnimationState extends State<StrapClampAnimation> with SingleTi
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // CHANGED: Light grey handle for visibility on white
           Container(
             width: 100,
             height: 100,
@@ -396,7 +417,6 @@ class _StrapClampAnimationState extends State<StrapClampAnimation> with SingleTi
             builder: (context, child) {
               return Positioned(
                 left: 30 + _clampSlide.value,
-                // CHANGED: Dark icon for visibility
                 child: const Icon(Icons.arrow_forward_ios, color: Colors.black87, size: 40),
               );
             },
@@ -408,7 +428,6 @@ class _StrapClampAnimationState extends State<StrapClampAnimation> with SingleTi
             builder: (context, child) {
               return Positioned(
                 right: 30 + _clampSlide.value,
-                // CHANGED: Dark icon for visibility
                 child: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 40),
               );
             },
@@ -419,105 +438,99 @@ class _StrapClampAnimationState extends State<StrapClampAnimation> with SingleTi
   }
 }
 
+// 2. Global Notification Overlay (Popup)
+class GlobalNotificationOverlay extends StatelessWidget {
+  final bool isVisible;
+  final bool isMobile;
 
-// 2. Notification Slide Animation
-class NotificationSlideAnimation extends StatefulWidget {
-  const NotificationSlideAnimation({super.key});
-
-  @override
-  State<NotificationSlideAnimation> createState() => _NotificationSlideAnimationState();
-}
-
-class _NotificationSlideAnimationState extends State<NotificationSlideAnimation> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _offsetAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 4),
-      vsync: this,
-    )..repeat();
-
-    _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -2.0),
-      end: const Offset(0, 0.2),
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
-      reverseCurve: const Interval(0.7, 1.0, curve: Curves.easeIn),
-    ));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const GlobalNotificationOverlay({
+    required this.isVisible,
+    required this.isMobile,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 250,
-      height: 450,
-      decoration: BoxDecoration(
-        // CHANGED: White phone body
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.grey[300]!, width: 4),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 40)],
-      ),
-      child: Stack(
-        children: [
-          // Screen Content
-          Positioned.fill(
-            child: Container(
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                // CHANGED: Lighter screen background
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Center(child: Icon(Icons.lock, size: 60, color: Colors.black12)),
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.elasticOut,
+      // Mobile: Top (-200 hidden, 20 shown)
+      // Desktop: Bottom Right
+      top: isMobile 
+          ? (isVisible ? 20 : -200) 
+          : null,
+      bottom: isMobile ? null : 40,
+      left: isMobile ? 20 : null,
+      right: isMobile 
+          ? 20 
+          : (isVisible ? 40 : -400), // Desktop slide in from right
+      
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: isVisible ? 1.0 : 0.0,
+        child: Material(
+          elevation: 10,
+          color: Colors.transparent,
+          child: Container(
+            width: isMobile ? null : 350, // Fixed width on desktop
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.warning_rounded, color: Colors.red, size: 24),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text("STRAPIT ALERT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                          Text("now", style: TextStyle(fontSize: 10, color: Colors.grey)),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        "Intrusion Detected",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        "Force sensors have detected an unauthorized entry attempt.",
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          
-          // Notification Bubble
-          SlideTransition(
-            position: _offsetAnimation,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))],
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.red),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text("ALERT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.red)),
-                        Text("Forced entry detected!", style: TextStyle(fontSize: 12, color: Colors.black)),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            ),
-          )
-        ],
+        ),
       ),
     );
   }
 }
-
 
 // 3. App Toggle Animation
 class AppToggleAnimation extends StatefulWidget {

@@ -1,104 +1,110 @@
+import 'dart:ui'; // Required for ImageFilter
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'about_us.dart';
 import 'product_page.dart';
 import 'features_page.dart';
-import 'pricing_page.dart'; // Import Pricing Page
-import 'partners_page.dart'; // Import Partners/Download Page
+import 'pricing_page.dart';
+import 'partners_page.dart';
 
 class NavBar extends StatelessWidget {
-  final bool isLightMode;
-
-  const NavBar({super.key, this.isLightMode = false});
+  const NavBar({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Define colors based on mode
-    final Color textColor = isLightMode ? Colors.black87 : Colors.white;
-    final Color hoverColor = Colors.blueAccent;
-    final Color borderColor = isLightMode ? Colors.black12 : Colors.white.withOpacity(0.2);
+    // Styles
+    const Color textColor = Colors.black87;
+    const Color hoverColor = Colors.blueAccent;
+    const Color borderColor = Colors.black12;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        bool isMobile = constraints.maxWidth < 950; // Slightly increased breakpoint for better spacing
+        bool isMobile = constraints.maxWidth < 950;
 
-        return Container(
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 40, vertical: 20),
-          decoration: BoxDecoration(
-            color: isLightMode ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.2),
-            border: Border(
-              bottom: BorderSide(color: borderColor),
-            ),
-          ),
-          child: Row(
-            children: [
-              // Logo / Home Link
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MainLandingPage()),
-                  );
-                },
-                child: Text(
-                  "STRAPIT",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                    letterSpacing: 2,
-                  ),
+        // CHANGED: Use ClipRect (Rectangular Clip) to strictly contain the BackdropFilter
+        // This prevents the blur from bleeding onto the rest of the screen
+        return ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 40, vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.75),
+                border: const Border(
+                  bottom: BorderSide(color: borderColor),
                 ),
               ),
-              const Spacer(),
-
-              // DESKTOP NAVIGATION
-              if (!isMobile) ...[
-                HoverNavBarItem(
-                  title: "About Us",
-                  textColor: textColor,
-                  hoverColor: hoverColor,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsPage())),
-                ),
-                HoverNavBarItem(
-                  title: "Product",
-                  textColor: textColor,
-                  hoverColor: hoverColor,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductPage())),
-                ),
-                HoverNavBarItem(
-                  title: "Features",
-                  textColor: textColor,
-                  hoverColor: hoverColor,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FeaturesPage())),
-                ),
-                HoverNavBarItem(
-                  title: "Pricing",
-                  textColor: textColor,
-                  hoverColor: hoverColor,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PricingPage())),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const PartnersPage()));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              child: Row(
+                children: [
+                  // Logo / Home Link
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MainLandingPage()),
+                      );
+                    },
+                    child: const Text(
+                      "STRAPIT",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                        letterSpacing: 2,
+                      ),
+                    ),
                   ),
-                  child: const Text("Download / Buy", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ] 
-              // MOBILE NAVIGATION (Hamburger)
-              else 
-                IconButton(
-                  icon: Icon(Icons.menu, color: textColor),
-                  onPressed: () => _showMobileMenu(context),
-                ),
-            ],
+                  const Spacer(),
+
+                  // DESKTOP NAVIGATION
+                  if (!isMobile) ...[
+                    HoverNavBarItem(
+                      title: "About Us",
+                      textColor: textColor,
+                      hoverColor: hoverColor,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsPage())),
+                    ),
+                    HoverNavBarItem(
+                      title: "Product",
+                      textColor: textColor,
+                      hoverColor: hoverColor,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductPage())),
+                    ),
+                    HoverNavBarItem(
+                      title: "Features",
+                      textColor: textColor,
+                      hoverColor: hoverColor,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FeaturesPage())),
+                    ),
+                    HoverNavBarItem(
+                      title: "Pricing",
+                      textColor: textColor,
+                      hoverColor: hoverColor,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PricingPage())),
+                    ),
+                    const SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const PartnersPage()));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: const Text("Download / Buy", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ] 
+                  // MOBILE NAVIGATION (Hamburger)
+                  else 
+                    IconButton(
+                      icon: const Icon(Icons.menu, color: textColor),
+                      onPressed: () => _showMobileMenu(context),
+                    ),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -108,10 +114,10 @@ class NavBar extends StatelessWidget {
   void _showMobileMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: isLightMode ? Colors.white : const Color(0xFF1A1A1A),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        final Color menuTextColor = isLightMode ? Colors.black87 : Colors.white;
+        const Color menuTextColor = Colors.black87;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
           child: Column(

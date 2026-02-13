@@ -75,7 +75,7 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
                   controller: _scrollController,
                   child: Column(
                     children: [
-                      const NavBar(isLightMode: true),
+                      const NavBar(),
 
                       // 1. TEAM INTRODUCTION
                       Padding(

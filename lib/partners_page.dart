@@ -64,7 +64,7 @@ class _PartnersPageState extends State<PartnersPage> with TickerProviderStateMix
 
                   return Column(
                     children: [
-                      const NavBar(isLightMode: true),
+                      const NavBar(),
                       const SizedBox(height: 80),
 
                       // 1. PARTNERS SECTION

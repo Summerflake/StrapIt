@@ -66,7 +66,7 @@ class _PricingPageState extends State<PricingPage> with TickerProviderStateMixin
 
                   return Column(
                     children: [
-                      const NavBar(isLightMode: true),
+                      const NavBar(),
                       
                       const SizedBox(height: 80),
 
@@ -168,7 +168,7 @@ class _PricingPageState extends State<PricingPage> with TickerProviderStateMixin
         const Text("MARKET COMPARISON", style: TextStyle(color: Colors.black54, fontSize: 12, letterSpacing: 1.5)),
         const SizedBox(height: 40),
         SizedBox(
-          height: 150,
+          height: 180, // Increased height to accommodate labels
           child: LayoutBuilder(
             builder: (context, constraints) {
               double width = constraints.maxWidth;
@@ -199,12 +199,16 @@ class _PricingPageState extends State<PricingPage> with TickerProviderStateMixin
                   ],
 
                   // COMPETITOR DOTS (Muted)
-                  _buildPriceDot(width, 0.30, "\$150", false, 600), // Smart Lock
-                  _buildPriceDot(width, 0.95, "\$500+", false, 700), // High end
-                  _buildPriceDot(width, 0.02, "\$10", false, 800),  // Cheap latch
+                  // Note: Positions slightly adjusted for visual clarity while keeping relative order
+                  _buildPriceDot(width, 0.30, "\$150", false, 600),   // Smart Lock
+                  _buildPriceDot(width, 0.95, "\$500+", false, 700),  // High end
+                  _buildPriceDot(width, 0.02, "\$10", false, 800),    // Cheap latch
+                  
+                  // ADDED: $30 Price Point as per outline
+                  _buildPriceDot(width, 0.08, "\$30", false, 900),    // Slightly offset from StrapIt
 
                   // STRAPIT DOT (Highlighted & Pulsing)
-                  // 22.70 is roughly 4.5% of 500
+                  // 22.70 is approx 4.5% of 500. Placed between 10 and 30.
                   _buildPriceDot(width, 0.05, "\$22.70\nStrapIt", true, 1200),
                 ],
               );
@@ -218,6 +222,8 @@ class _PricingPageState extends State<PricingPage> with TickerProviderStateMixin
   Widget _buildPriceDot(double totalWidth, double pct, String label, bool isHero, int delay) {
     return Positioned(
       left: totalWidth * pct,
+      // Adjust vertical position for hero to avoid overlap
+      top: isHero ? 60 : 85, // Hero is higher up
       child: FutureBuilder(
         future: Future.delayed(Duration(milliseconds: delay)),
         builder: (context, snapshot) {
@@ -229,13 +235,17 @@ class _PricingPageState extends State<PricingPage> with TickerProviderStateMixin
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isHero)
-                  const PulsingDot()
-                else
-                  Container(
-                    width: 12, height: 12,
-                    decoration: BoxDecoration(color: Colors.grey[300], shape: BoxShape.circle),
-                  ),
+                // The Dot on the line (which is vertically centered in Stack approx at top ~90)
+                // We use transform to visually place the dot on the line while keeping text layout
+                Transform.translate(
+                  offset: Offset(0, isHero ? 20 : -5), // Fine tune dot position relative to line
+                  child: isHero
+                    ? const PulsingDot()
+                    : Container(
+                        width: 12, height: 12,
+                        decoration: BoxDecoration(color: Colors.grey[300], shape: BoxShape.circle),
+                      ),
+                ),
                 const SizedBox(height: 10),
                 Text(
                   label,
@@ -264,37 +274,51 @@ class _PricingPageState extends State<PricingPage> with TickerProviderStateMixin
         child: AnimatedSlide(
           duration: const Duration(milliseconds: 1000),
           offset: _showPriceCard ? Offset.zero : const Offset(0, 0.1),
+          // We wrap the content in a container to hold shadows first
+          // Shadows must be outside ClipRRect to be visible
           child: Container(
             width: isMobile ? double.infinity : 500,
-            padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
-              color: Colors.white,
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(color: Colors.blueAccent.withOpacity(0.1), blurRadius: 40, offset: const Offset(0, 15)),
                 BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
               ],
-              border: Border.all(color: Colors.blueAccent.withOpacity(0.1)),
             ),
-            child: Column(
-              children: [
-                // Header
-                const Text("STRAPIT ONE", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black54)),
-                const SizedBox(height: 10),
-                const Text("USD \$22.70", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.black87)),
-                const SizedBox(height: 40),
-                
-                // Features
-                _buildFeatureRow("One-time purchase"),
-                _buildFeatureRow("No installation cost"),
-                _buildFeatureRow("No drilling required"),
-                _buildFeatureRow("App-controlled alarm"),
-                
-                const SizedBox(height: 50),
-                
-                // Pulsing Button
-                const PulsingButton(text: "Buy StrapIt"),
-              ],
+            // The ClipRRect clips the blur effect to the border radius
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0), // Strong frosted blur
+                child: Container(
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.65), // White tint, but semi-transparent
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.blueAccent.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    children: [
+                      // Header
+                      const Text("STRAPIT ONE", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black54)),
+                      const SizedBox(height: 10),
+                      const Text("USD \$22.70", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 40),
+                      
+                      // Features
+                      _buildFeatureRow("One-time purchase"),
+                      _buildFeatureRow("No installation cost"),
+                      _buildFeatureRow("No drilling required"),
+                      _buildFeatureRow("App-controlled alarm"),
+                      
+                      const SizedBox(height: 50),
+                      
+                      // Pulsing Button
+                      const PulsingButton(text: "Buy StrapIt"),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),
