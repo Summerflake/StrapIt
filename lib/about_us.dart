@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'nav_bar.dart';
 import 'background.dart';
 import 'home_page.dart';
@@ -14,8 +15,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _statsKey = GlobalKey(); // Key to locate stats section
   
-  bool _animationStarted = false;
-  final List<bool> _visibleStats = [false, false, false, false];
+  bool _statsVisible = false;
 
   @override
   void initState() {
@@ -24,7 +24,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
   }
 
   void _scrollListener() {
-    if (_animationStarted) return;
+    if (_statsVisible) return;
 
     // Check if the stats section is visible on screen
     if (_statsKey.currentContext != null) {
@@ -33,23 +33,10 @@ class _AboutUsPageState extends State<AboutUsPage> {
       final double screenHeight = MediaQuery.of(context).size.height;
 
       // Trigger when the top of the stats section enters the bottom 25% of the viewport
-      if (position.dy < screenHeight * 0.85) {
-        _startStaggeredAnimation();
-      }
-    }
-  }
-
-  Future<void> _startStaggeredAnimation() async {
-    if (!mounted) return;
-    setState(() => _animationStarted = true);
-
-    // Reveal items one by one
-    for (int i = 0; i < _visibleStats.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (mounted) {
-        setState(() {
-          _visibleStats[i] = true;
-        });
+      if (position.dy < screenHeight * 0.90) {
+        if (mounted) {
+          setState(() => _statsVisible = true);
+        }
       }
     }
   }
@@ -94,33 +81,31 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 60),
 
-                // 1. WHO WE ARE
+                // 1. WHO WE ARE (MERGED WITH VISION & MISSION)
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     children: [
                       Text("WHO WE ARE", style: headerStyle),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 50),
                       Container(
                         constraints: const BoxConstraints(maxWidth: 900),
-                        child: RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
-                            style: const TextStyle(fontSize: 22, height: 1.6, fontWeight: FontWeight.w300, color: Colors.black87, fontFamily: 'Montserrat'),
-                            children: [
-                              TextSpan(
-                                text: "Vision: ",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold, 
-                                  fontSize: 24,
-                                  foreground: Paint()..shader = const LinearGradient(
-                                    colors: <Color>[Colors.blueAccent, Colors.purpleAccent],
-                                  ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
-                                ),
-                              ),
-                              const TextSpan(text: "A future where security is not fixed to buildings, but moves with people. To secure every space, everywhere. To reimagine security for a mobile world."),
-                            ]
-                          ),
+                        child: Column(
+                          children: [
+                            // VISION SUB-SECTION
+                            _buildInfoSection(
+                              title: "Our Vision",
+                              description: "A future where security is not fixed to buildings, but moves with people. To secure every space, everywhere. To reimagine security for a mobile world.",
+                            ),
+                            
+                            const SizedBox(height: 60),
+
+                            // MISSION SUB-SECTION
+                            _buildInfoSection(
+                              title: "Our Mission",
+                              description: "To make personal security portable, affordable, and effortless, wherever people stay."
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -129,29 +114,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 80),
 
-                // 2. OUR MISSION
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Column(
-                    children: [
-                      Text("OUR MISSION", style: headerStyle),
-                      const SizedBox(height: 30),
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 900),
-                        child: const Text(
-                          "To make personal security portable, affordable, and effortless, wherever people stay.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 22, height: 1.6, fontWeight: FontWeight.w300),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 80),
-
-                // 3. TEAM INTRODUCTION
+                // 2. TEAM INTRODUCTION (Previously #3)
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
@@ -177,7 +140,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 80),
 
-                // 4. THE PROBLEM
+                // 3. THE PROBLEM (Previously #4)
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.symmetric(
@@ -202,8 +165,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           style: TextStyle(fontSize: 14, color: Colors.grey)),
                       const SizedBox(height: 40),
 
-                      // STATS ROW WITH FADE IN
-                      // Wrapped in a Container with Key to detect visibility
+                      // STATS ROW WITH ROLLING NUMBERS
                       Container(
                         key: _statsKey,
                         child: Wrap(
@@ -211,10 +173,27 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           runSpacing: 40,
                           alignment: WrapAlignment.center,
                           children: [
-                            _buildAnimatedStat(0, "60,000+", "Offenses Reported\nin the US"),
-                            _buildAnimatedStat(1, "< 20%", "Clearance Rate\n(Cases Solved)"),
-                            _buildAnimatedStat(2, "130%", "Population Coverage\nof Reports"),
-                            _buildAnimatedStat(3, "Rising", "Trend Analysis\n2024 - 2025"),
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "60,000+", 
+                              label: "Offenses Reported\nin the US"
+                            ),
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "< 20%", 
+                              label: "Clearance Rate\n(Cases Solved)"
+                            ),
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "130%", 
+                              label: "Population Coverage\nof Reports"
+                            ),
+                            // 'Rising' doesn't have a number, so we handle it as simple text
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "Rising", 
+                              label: "Trend Analysis\n2024 - 2025"
+                            ),
                           ],
                         ),
                       ),
@@ -224,7 +203,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 80),
 
-                // 5. TARGET AUDIENCE
+                // 4. TARGET AUDIENCE (Previously #5)
                 Stack(
                   children: [
                     Container(
@@ -305,51 +284,246 @@ class _AboutUsPageState extends State<AboutUsPage> {
     );
   }
 
-  Widget _buildAnimatedStat(int index, String number, String label) {
-    bool isVisible = _visibleStats[index];
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOut,
-      opacity: isVisible ? 1.0 : 0.0,
-      child: AnimatedSlide(
-        duration: const Duration(milliseconds: 600),
-        offset: isVisible ? Offset.zero : const Offset(0, 0.5),
-        curve: Curves.easeOut,
-        child: StatItem(number: number, label: label),
-      ),
+  // HELPER FOR CONSISTENT INFO SECTIONS
+  Widget _buildInfoSection({required String title, required String description}) {
+    return Column(
+      children: [
+        // Title matched to headers (No gradient, Blue Accent, Spaced)
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.blueAccent,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 4,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Decorative Gradient Underline
+        Container(
+          width: 50,
+          height: 3,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent]),
+          ),
+        ),
+        const SizedBox(height: 25),
+        // Consistent Body Text - Grey (No ShaderMask)
+        Text(
+          description,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 18, 
+            height: 1.6, 
+            fontWeight: FontWeight.w400,
+            color: Colors.black54, // Restored to Grey
+          ),
+        ),
+      ],
     );
   }
 }
 
-class StatItem extends StatelessWidget {
-  final String number;
+// -----------------------------------------------------------
+//  ROLLING NUMBER / SLOT MACHINE EFFECT STAT ITEM
+// -----------------------------------------------------------
+class RollingStatItem extends StatelessWidget {
+  final bool isVisible;
+  final String targetString;
   final String label;
 
-  const StatItem({super.key, required this.number, required this.label});
+  const RollingStatItem({
+    super.key,
+    required this.isVisible,
+    required this.targetString,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // 1. Check if it's a numeric stat
+    final String numericOnly = targetString.replaceAll(RegExp(r'[^0-9]'), '');
+    final bool isNumeric = numericOnly.isNotEmpty;
+
+    // Common Style
+    const TextStyle statStyle = TextStyle(
+      color: Colors.blueAccent,
+      fontSize: 56,
+      fontWeight: FontWeight.bold,
+      height: 1.1, // Fix height for alignment
+    );
+
+    Widget content;
+
+    if (!isNumeric) {
+      // Non-numeric case (e.g. "Rising")
+      content = AnimatedOpacity(
+        opacity: isVisible ? 1.0 : 0.0,
+        duration: const Duration(seconds: 1),
+        child: Text(
+          targetString,
+          style: statStyle,
+        ),
+      );
+    } else {
+      // Numeric Slot Machine Case
+      // Count digits to calculate staggered duration
+      List<Widget> rowChildren = [];
+      int totalDigits = numericOnly.length;
+      int currentDigitIdx = 0;
+
+      for (int i = 0; i < targetString.length; i++) {
+        String char = targetString[i];
+        if (RegExp(r'[0-9]').hasMatch(char)) {
+          // It is a digit
+          currentDigitIdx++;
+          // Staggered Duration: 
+          // Base time (500ms) + Stagger based on position
+          // Last digit finishes at ~1200ms
+          double durationMs = 500 + (700 * (currentDigitIdx / totalDigits));
+          
+          rowChildren.add(_SpinningDigit(
+            targetDigit: int.parse(char),
+            duration: Duration(milliseconds: durationMs.toInt()),
+            isVisible: isVisible,
+            style: statStyle,
+          ));
+        } else {
+          // Static char (comma, +, %)
+          rowChildren.add(Text(char, style: statStyle));
+        }
+      }
+
+      content = AnimatedOpacity(
+        opacity: isVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: rowChildren,
+        ),
+      );
+    }
+
     return Column(
       children: [
-        Text(
-          number,
-          style: const TextStyle(
-            color: Colors.blueAccent,
-            fontSize: 56,
-            fontWeight: FontWeight.bold,
+        content,
+        const SizedBox(height: 10),
+        AnimatedOpacity(
+          opacity: isVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 800),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.4),
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              height: 1.4),
-        ),
       ],
+    );
+  }
+}
+
+class _SpinningDigit extends StatefulWidget {
+  final int targetDigit;
+  final Duration duration;
+  final bool isVisible;
+  final TextStyle style;
+
+  const _SpinningDigit({
+    super.key,
+    required this.targetDigit,
+    required this.duration,
+    required this.isVisible,
+    required this.style,
+  });
+
+  @override
+  State<_SpinningDigit> createState() => _SpinningDigitState();
+}
+
+class _SpinningDigitState extends State<_SpinningDigit> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  final double _digitHeight = 62.0; // Matches fontSize + slight padding
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    // easeOutCubic gives a nice "settle" effect
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic); 
+
+    if (widget.isVisible) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_SpinningDigit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible && !oldWidget.isVisible) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Generate a strip of numbers.
+    // Order: [Target, 9, 8, ... 0, 9, 8 ... ]
+    // We animate visual offset to move numbers DOWN (Up to Down).
+    // This means the strip effectively slides down.
+    
+    List<int> strip = [];
+    strip.add(widget.targetDigit);
+    
+    // Add 3 cycles of 9..0 to ensure enough length for high speed
+    for (int k = 0; k < 3; k++) {
+      for (int i = 9; i >= 0; i--) {
+        strip.add(i);
+      }
+    }
+    
+    double totalHeight = strip.length * _digitHeight;
+    
+    return SizedBox(
+      height: _digitHeight,
+      width: 42.0, // Fixed width to prevent jitter
+      child: ClipRect(
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            // Animate from Bottom of strip (hidden randoms) to Top of strip (Target)
+            double startOffset = totalHeight - _digitHeight;
+            double currentOffset = startOffset * (1.0 - _animation.value);
+            
+            return Stack(
+              children: [
+                Positioned(
+                  top: -currentOffset, 
+                  left: 0, right: 0,
+                  child: Column(
+                    children: strip.map((d) => SizedBox(
+                      height: _digitHeight,
+                      child: Center(child: Text('$d', style: widget.style)),
+                    )).toList(),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

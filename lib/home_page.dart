@@ -539,8 +539,7 @@ class PricingSection extends StatelessWidget {
         children: [
           const Text("StrapIt", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
           const SizedBox(height: 10),
-          const Text("\$16.74", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
-          const Text("estimated hardware cost", style: TextStyle(fontSize: 12, color: Colors.grey)),
+          const Text("\$24.90", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
           const SizedBox(height: 20),
           _checkItem("One-time purchase"),
           _checkItem("No installation cost"),
@@ -647,7 +646,7 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 600),
+      constraints: const BoxConstraints(maxWidth: 800), // Increased width for 4 items
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
@@ -690,9 +689,11 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
                     ),
                     
                     // Points and Labels
-                    if (_widthAnimation.value > 0.1) ..._buildPoint(0.1, "StrapIt\n\$16.74", true),
-                    if (_widthAnimation.value > 0.5) ..._buildPoint(0.5, "Mechanical\nLock\n\$40+", false),
-                    if (_widthAnimation.value > 0.9) ..._buildPoint(0.9, "Electronic\nLock\n\$200+", false),
+                    // Distributed approximate positions: 0.1, 0.35, 0.6, 0.85
+                    if (_widthAnimation.value > 0.1) ..._buildPoint(0.1, "Supplementary\nLock\n\$10-30", false),
+                    if (_widthAnimation.value > 0.35) ..._buildPoint(0.35, "StrapIt\n\$24.90", true),
+                    if (_widthAnimation.value > 0.6) ..._buildPoint(0.6, "Smart Door\nAlarm\n\$30-150", false),
+                    if (_widthAnimation.value > 0.85) ..._buildPoint(0.85, "Digital Smart\nLock\n\$150-500", false),
                   ],
                 ),
               );

@@ -35,17 +35,35 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // FIX: Wait for the first frame to be rendered before starting async work.
-    // This prevents "Navigator locked" and "setState during build" errors.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAssets();
     });
   }
 
   Future<void> _loadAssets() async {
-    // List of all critical images to preload
+    // 1. CRITICAL: Only wait for the first Hero image (hotel.jpg)
+    try {
+      await precacheImage(const AssetImage('assets/image/hotel.jpg'), context);
+    } catch (e) {
+      debugPrint("Warning: Failed to load hero image.");
+    }
+
+    // 2. BACKGROUND: Trigger loading for others, but DO NOT await them.
+    // This allows the app to open immediately while these load in the back.
+    _preloadBackgroundImages();
+
+    // 3. Navigate immediately
+    if (mounted) {
+      // Small delay to prevent flicker if image loads instantly
+      await Future.delayed(const Duration(milliseconds: 100)); 
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    }
+  }
+
+  void _preloadBackgroundImages() {
     final images = [
-      'assets/image/hotel.jpg',
       'assets/image/rental.jpg',
       'assets/image/dorm.jpg',
       'assets/image/home.jpg',
@@ -58,23 +76,12 @@ class _SplashScreenState extends State<SplashScreen> {
       'assets/image/clamp.jpg',
     ];
 
-    // Attempt to preload images
     for (String path in images) {
       try {
-        await precacheImage(AssetImage(path), context);
+        precacheImage(AssetImage(path), context);
       } catch (e) {
-        // Log error but continue so the app doesn't freeze
-        debugPrint("Warning: Failed to load image $path. Check pubspec.yaml.");
+        debugPrint("Background load failed for $path");
       }
-    }
-
-    // FIX: Ensure a minimal delay so the Splash Screen is actually seen
-    // and to ensure the Navigator is ready to accept new routes.
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
     }
   }
 
