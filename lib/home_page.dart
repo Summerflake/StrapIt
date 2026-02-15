@@ -425,38 +425,7 @@ class FeaturesSection extends StatelessWidget {
           _buildFeatureRow(isMobile, "2. Intrusion Alarm", "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately.", "assets/image/crime.jpg", true),
           _buildFeatureRow(isMobile, "3. App-Controlled Smart Security", "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement.", "assets/image/dontknow.jpg", false),
           
-          const SizedBox(height: 100),
-          
-          // --- VIDEO STAKEHOLDER (16:9) ---
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: AspectRatio(
-              aspectRatio: 16/9,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(20),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/image/city.jpg'), // Placeholder video thumbnail
-                    fit: BoxFit.cover,
-                    opacity: 0.6,
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(Icons.play_arrow, color: Colors.white, size: 50),
-                  ),
-                ),
-              ),
-            ),
-          )
+          // Removed large video stakeholder here as requested
         ],
       ),
     );
@@ -472,12 +441,48 @@ class FeaturesSection extends StatelessWidget {
       ],
     );
 
-    Widget imageContent = isMobile 
-      ? Image.asset(img, height: 300, width: double.infinity, fit: BoxFit.cover)
-      : ClipRRect(
-          borderRadius: BorderRadius.circular(20), 
-          child: Image.asset(img, height: 250, fit: BoxFit.cover)
-        );
+    // Replaced simple Image with "Video Stakeholder" style (Image + Play Overlay)
+    Widget imageContent = GestureDetector(
+      onTap: () {
+        // Placeholder for video play action
+        print("Play feature video for $title");
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          isMobile 
+            ? Image.asset(img, height: 300, width: double.infinity, fit: BoxFit.cover)
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(20), 
+                child: Image.asset(
+                  img, 
+                  height: 250, 
+                  width: double.infinity, // Ensures image expands to fill width
+                  fit: BoxFit.cover
+                )
+              ),
+          // Dark Overlay
+          Container(
+            height: isMobile ? 300 : 250,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
+            ),
+          ),
+          // Play Button Icon
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+          ),
+        ],
+      ),
+    );
 
     if (isMobile) {
       return Padding(
@@ -581,7 +586,7 @@ class PricingSection extends StatelessWidget {
         else
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               priceCorridor, // Left
               const SizedBox(width: 80),
@@ -634,6 +639,7 @@ class PriceCorridor extends StatefulWidget {
 class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _widthAnimation;
+  
   @override
   void initState() {
     super.initState();
@@ -643,78 +649,82 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
   }
   @override
   void dispose() { _controller.dispose(); super.dispose(); }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 800), // Increased width for 4 items
+      constraints: const BoxConstraints(maxWidth: 800),
+      height: 150, // Fixed height to manage positioning
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          // REMOVED LOW/MID/HIGH labels
-          const SizedBox(height: 10),
-          AnimatedBuilder(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double totalWidth = constraints.maxWidth;
+          final double trackTop = 50.0; // Fixed Y position for track
+          
+          return AnimatedBuilder(
             animation: _widthAnimation,
             builder: (context, child) {
-              return SizedBox(
-                height: 140, // Increased height to prevent text clipping
-                child: Stack(
-                  // Remove default alignment to allow specific positioning
-                  children: [
-                     // The Track
-                    Align(
-                      alignment: const Alignment(0, -0.3), // Move bar up visually
-                      child: Container(
-                        height: 8, 
-                        width: double.infinity, 
-                        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4))
-                      )
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 1. The Track Background
+                  Positioned(
+                    top: trackTop,
+                    left: 0, 
+                    right: 0,
+                    child: Container(
+                      height: 8, 
+                      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4))
                     ),
-                    // The Colored Bar
-                    Align(
-                      alignment: Alignment.centerLeft, // Constrain width from left
-                      child: FractionallySizedBox(
-                        widthFactor: _widthAnimation.value, 
-                        heightFactor: 1.0, // Take full height to allow internal alignment
-                        child: Align(
-                          alignment: const Alignment(0, -0.3), // Match track vertical position
-                          child: Container(
-                            height: 8, 
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent]), 
-                              borderRadius: BorderRadius.circular(4)
-                            )
-                          )
-                        )
-                      )
+                  ),
+                  
+                  // 2. The Colored Bar (Animated Width)
+                  Positioned(
+                    top: trackTop,
+                    left: 0,
+                    width: totalWidth * _widthAnimation.value,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent]), 
+                        borderRadius: BorderRadius.circular(4)
+                      ),
                     ),
-                    
-                    // Points and Labels
-                    // Distributed approximate positions: 0.1, 0.35, 0.6, 0.85
-                    if (_widthAnimation.value > 0.1) ..._buildPoint(0.1, "Supplementary\nLock\n\$10-30", false),
-                    if (_widthAnimation.value > 0.35) ..._buildPoint(0.35, "StrapIt\n\$24.90", true),
-                    if (_widthAnimation.value > 0.6) ..._buildPoint(0.6, "Smart Door\nAlarm\n\$30-150", false),
-                    if (_widthAnimation.value > 0.85) ..._buildPoint(0.85, "Digital Smart\nLock\n\$150-500", false),
-                  ],
-                ),
+                  ),
+                  
+                  // 3. Points and Labels
+                  // We render them if the bar has passed their position
+                  if (_widthAnimation.value > 0.1) ..._buildPositionedPoint(0.1, totalWidth, trackTop, "Supplementary\nLock\n\$10-30", false),
+                  if (_widthAnimation.value > 0.35) ..._buildPositionedPoint(0.35, totalWidth, trackTop, "StrapIt\n\$24.90", true),
+                  if (_widthAnimation.value > 0.6) ..._buildPositionedPoint(0.6, totalWidth, trackTop, "Smart Door\nAlarm\n\$30-150", false),
+                  if (_widthAnimation.value > 0.85) ..._buildPositionedPoint(0.85, totalWidth, trackTop, "Digital Smart\nLock\n\$150-500", false),
+                ],
               );
             },
-          ),
-        ],
+          );
+        }
       ),
     );
   }
 
-  List<Widget> _buildPoint(double alignX, String label, bool isActive) {
-    // Vertical alignment constants
-    const double barAlignY = -0.3;
-    const double textAlignY = 0.5; // Lower down for text
-
+  // Returns widgets for Dot and Label
+  List<Widget> _buildPositionedPoint(double alignX, double totalWidth, double trackTop, String label, bool isActive) {
+    // Dot size
+    const double dotSize = 16.0;
+    
+    // Calculate precise Left position for the center of the element
+    final double leftPos = totalWidth * alignX;
+    
     return [
       // 1. The Dot
-      Align(
-        alignment: Alignment(alignX * 2 - 1, barAlignY),
+      // Centered exactly on the track line
+      Positioned(
+        left: leftPos - (dotSize / 2),
+        top: trackTop + (8 / 2) - (dotSize / 2), // Track height is 8, so +4 is center.
         child: Container(
-          width: 16, height: 16,
+          width: dotSize, 
+          height: dotSize,
           decoration: BoxDecoration(
             color: isActive ? Colors.blueAccent : Colors.grey[300], 
             shape: BoxShape.circle, 
@@ -722,9 +732,13 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
           ),
         ),
       ),
+      
       // 2. The Label
-      Align(
-        alignment: Alignment(alignX * 2 - 1, textAlignY),
+      // Centered horizontally below the dot
+      Positioned(
+        left: leftPos - 60, // Width 120, so offset 60 to center
+        width: 120, 
+        top: trackTop + 20, // 20px below the track top
         child: Text(
           label, 
           textAlign: TextAlign.center,
@@ -859,13 +873,14 @@ class FooterCombinedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
 
+    // Modified Download Content: ALWAYS centered
     Widget downloadContent = Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center, // Forced Center
       children: [
         const Text("GET THE APP", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
         Row(
-          mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center, // Forced Center
           children: [
              _buildAppStoreBtn(),
              const SizedBox(width: 15),
@@ -916,7 +931,7 @@ class FooterCombinedSection extends StatelessWidget {
         ? Column(children: [downloadContent, const SizedBox(height: 60), footerContent])
         : Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center, // Aligns download and footer vertically centered
             children: [
               Expanded(child: downloadContent),
               Expanded(child: footerContent),

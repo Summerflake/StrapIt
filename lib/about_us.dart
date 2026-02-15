@@ -275,6 +275,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                   ],
                 ),
                 
+                // Uses the updated footer from home_page.dart
                 const FooterCombinedSection(),
               ],
             ),
