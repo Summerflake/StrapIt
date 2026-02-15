@@ -652,7 +652,7 @@ class PricingSection extends StatelessWidget {
           child: Text(
             "Service, Distribution, and Public Safety Partners",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: Color.fromARGB(137, 248, 104, 104)),
+            style: TextStyle(fontSize: 18, color: Colors.black54),
           ),
         ),
         const SizedBox(height: 40),
@@ -700,6 +700,9 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    // FIX: Detect mobile layout to adjust label position
+    bool isMobile = MediaQuery.of(context).size.width < 1100;
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 800),
       height: 150, // Fixed height to manage positioning
@@ -708,7 +711,7 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double totalWidth = constraints.maxWidth;
-          final double trackTop = 50.0; // Fixed Y position for track
+          final double trackTop = 70.0; // Moved down to accommodate top label
           
           return AnimatedBuilder(
             animation: _widthAnimation,
@@ -746,8 +749,9 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
                   // 0.1 (Supplementary) -> 0.28 (StrapIt) = Gap 0.18
                   // 0.28 (StrapIt) -> 0.6 (Smart Door) = Gap 0.32
                   // The gaps are now unequal as requested.
+                  // FIX: Pass isMobile to isTop parameter for StrapIt label
                   if (_widthAnimation.value > 0.1) ..._buildPositionedPoint(0.1, totalWidth, trackTop, "Supplementary\nLock\n\$10-30", false),
-                  if (_widthAnimation.value > 0.21) ..._buildPositionedPoint(0.21, totalWidth, trackTop, "StrapIt\n\$24.90", true),
+                  if (_widthAnimation.value > 0.21) ..._buildPositionedPoint(0.21, totalWidth, trackTop, "StrapIt\n\$24.90", true, isTop: isMobile),
                   if (_widthAnimation.value > 0.6) ..._buildPositionedPoint(0.6, totalWidth, trackTop, "Smart Door\nAlarm\n\$30-150", false),
                   if (_widthAnimation.value > 0.85) ..._buildPositionedPoint(0.85, totalWidth, trackTop, "Digital Smart\nLock\n\$150-500", false),
                 ],
@@ -760,13 +764,17 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
   }
 
   // Returns widgets for Dot and Label
-  List<Widget> _buildPositionedPoint(double alignX, double totalWidth, double trackTop, String label, bool isActive) {
+  List<Widget> _buildPositionedPoint(double alignX, double totalWidth, double trackTop, String label, bool isActive, {bool isTop = false}) {
     // Dot size
     const double dotSize = 16.0;
     
     // Calculate precise Left position for the center of the element
     final double leftPos = totalWidth * alignX;
     
+    // Determine label vertical position
+    // If on top, move up by ~55px (adjust as needed for font size)
+    final double labelTop = isTop ? trackTop - 55 : trackTop + 20;
+
     return [
       // 1. The Dot
       // Centered exactly on the track line
@@ -785,11 +793,11 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
       ),
       
       // 2. The Label
-      // Centered horizontally below the dot
+      // Centered horizontally below or above the dot
       Positioned(
         left: leftPos - 60, // Width 120, so offset 60 to center
         width: 120, 
-        top: trackTop + 20, // 20px below the track top
+        top: labelTop, 
         child: Text(
           label, 
           textAlign: TextAlign.center,
@@ -804,7 +812,6 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
     ];
   }
 }
-
 // ============================================================================
 // PARTNER MARQUEE
 // ============================================================================
