@@ -41,21 +41,15 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _loadAssets() async {
-    // 1. CRITICAL: Only wait for the first Hero image (hotel.jpg)
-    try {
-      await precacheImage(const AssetImage('assets/image/hotel.jpg'), context);
-    } catch (e) {
-      debugPrint("Warning: Failed to load hero image.");
-    }
-
-    // 2. BACKGROUND: Trigger loading for others, but DO NOT await them.
-    // This allows the app to open immediately while these load in the back.
+    // 1. NON-BLOCKING LOAD
+    // We trigger the image loading in the background but DO NOT await it.
+    // This fixes the 10-second delay.
     _preloadBackgroundImages();
 
-    // 3. Navigate immediately
+    // 2. Navigate immediately
+    // A small delay ensures the build cycle is complete, but it feels instant to the user.
     if (mounted) {
-      // Small delay to prevent flicker if image loads instantly
-      await Future.delayed(const Duration(milliseconds: 100)); 
+      await Future.delayed(const Duration(milliseconds: 50)); 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomePage()),
       );
@@ -64,6 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _preloadBackgroundImages() {
     final images = [
+      'assets/image/hotel.jpg',
       'assets/image/rental.jpg',
       'assets/image/dorm.jpg',
       'assets/image/home.jpg',

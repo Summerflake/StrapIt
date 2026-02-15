@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // Added for SVG support
+import 'package:flutter_svg/flutter_svg.dart'; 
 import 'nav_bar.dart';
 import 'background.dart';
 
@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // ============================================================================
-// 1. HERO SECTION
+// 1. HERO SECTION (OPTIMIZED)
 // ============================================================================
 class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
@@ -125,14 +125,32 @@ class _HeroSectionState extends State<HeroSection> {
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 1000),
+              // Use Key to trigger transition
               child: Container(
                 key: ValueKey<int>(_currentIdx),
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(_heroData[_currentIdx]['image']!),
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
-                  ),
+                width: double.infinity,
+                height: double.infinity,
+                // Using Stack to layer Image + Dark Filter
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // OPTIMIZATION: FrameBuilder allows immediate rendering
+                    Image.asset(
+                      _heroData[_currentIdx]['image']!,
+                      fit: BoxFit.cover,
+                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded) return child;
+                        return AnimatedOpacity(
+                          opacity: frame == null ? 0 : 1,
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeOut,
+                          child: child,
+                        );
+                      },
+                    ),
+                    // Dark Overlay
+                    Container(color: Colors.black.withOpacity(0.4)),
+                  ],
                 ),
               ),
             ),
@@ -160,7 +178,7 @@ class _HeroSectionState extends State<HeroSection> {
 }
 
 // ============================================================================
-// VIDEO SECTION
+// VIDEO SECTION (OPTIMIZED)
 // ============================================================================
 class VideoSection extends StatelessWidget {
   const VideoSection({super.key});
@@ -184,10 +202,6 @@ class VideoSection extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 900),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
-                image: const DecorationImage(
-                  image: AssetImage('assets/image/hotel.jpg'), 
-                  fit: BoxFit.cover,
-                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -199,6 +213,22 @@ class VideoSection extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Video Thumbnail with optimized loading
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: Image.asset(
+                      'assets/image/hotel.jpg',
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded) return child;
+                        return frame == null 
+                          ? Container(color: Colors.grey[200]) 
+                          : child;
+                      },
+                    ),
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(30),
@@ -242,7 +272,7 @@ class VideoSection extends StatelessWidget {
 }
 
 // ============================================================================
-// 2. PRODUCT SECTION
+// 2. PRODUCT SECTION (OPTIMIZED)
 // ============================================================================
 class ProductSection extends StatelessWidget {
   const ProductSection({super.key});
@@ -316,9 +346,16 @@ class ProductSection extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
+              // OPTIMIZATION: Main Product Image Placeholder
               child: Image.asset(
                 'assets/image/clamp.jpg', 
                 fit: BoxFit.cover,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) return child;
+                  return frame == null 
+                    ? Container(color: Colors.grey[200], height: 400) // Placeholder
+                    : child;
+                },
               ),
             ),
           ),
@@ -386,7 +423,17 @@ class _ComponentCard extends StatelessWidget {
            Expanded(
              child: ClipRRect(
                borderRadius: BorderRadius.circular(10),
-               child: Image.asset(image, fit: BoxFit.contain),
+               // OPTIMIZATION: Component Icons Placeholder
+               child: Image.asset(
+                 image, 
+                 fit: BoxFit.contain,
+                 frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                   if (wasSynchronouslyLoaded) return child;
+                   return frame == null 
+                     ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))) 
+                     : child;
+                 },
+               ),
              ),
            ),
            const SizedBox(height: 12),
@@ -407,7 +454,7 @@ class _ComponentCard extends StatelessWidget {
 }
 
 // ============================================================================
-// 3. FEATURES SECTION (UPDATED)
+// 3. FEATURES SECTION (OPTIMIZED)
 // ============================================================================
 class FeaturesSection extends StatelessWidget {
   const FeaturesSection({super.key});
@@ -424,8 +471,6 @@ class FeaturesSection extends StatelessWidget {
           _buildFeatureRow(isMobile, "1. Portable & Non-Destructive", "No drilling or permanent installation. No need to replace existing locks. Leaves no marks on doors or frames.", "assets/image/human.jpg", false),
           _buildFeatureRow(isMobile, "2. Intrusion Alarm", "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately.", "assets/image/crime.jpg", true),
           _buildFeatureRow(isMobile, "3. App-Controlled Smart Security", "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement.", "assets/image/dontknow.jpg", false),
-          
-          // Removed large video stakeholder here as requested
         ],
       ),
     );
@@ -441,26 +486,29 @@ class FeaturesSection extends StatelessWidget {
       ],
     );
 
-    // Replaced simple Image with "Video Stakeholder" style (Image + Play Overlay)
     Widget imageContent = GestureDetector(
       onTap: () {
-        // Placeholder for video play action
         print("Play feature video for $title");
       },
       child: Stack(
         alignment: Alignment.center,
         children: [
-          isMobile 
-            ? Image.asset(img, height: 300, width: double.infinity, fit: BoxFit.cover)
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(20), 
-                child: Image.asset(
-                  img, 
-                  height: 250, 
-                  width: double.infinity, // Ensures image expands to fill width
-                  fit: BoxFit.cover
-                )
-              ),
+          // OPTIMIZATION: Feature Images Placeholder
+          ClipRRect(
+            borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
+            child: Image.asset(
+              img, 
+              height: isMobile ? 300 : 250, 
+              width: double.infinity,
+              fit: BoxFit.cover,
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                 if (wasSynchronouslyLoaded) return child;
+                 return frame == null 
+                   ? Container(height: isMobile ? 300 : 250, color: Colors.grey[200]) 
+                   : child;
+              },
+            ),
+          ),
           // Dark Overlay
           Container(
             height: isMobile ? 300 : 250,
@@ -604,7 +652,7 @@ class PricingSection extends StatelessWidget {
           child: Text(
             "Service, Distribution, and Public Safety Partners",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: Colors.black54),
+            style: TextStyle(fontSize: 18, color: Color.fromARGB(137, 248, 104, 104)),
           ),
         ),
         const SizedBox(height: 40),
@@ -694,9 +742,12 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
                   ),
                   
                   // 3. Points and Labels
-                  // We render them if the bar has passed their position
+                  // SHIFTED StrapIt LEFT:
+                  // 0.1 (Supplementary) -> 0.28 (StrapIt) = Gap 0.18
+                  // 0.28 (StrapIt) -> 0.6 (Smart Door) = Gap 0.32
+                  // The gaps are now unequal as requested.
                   if (_widthAnimation.value > 0.1) ..._buildPositionedPoint(0.1, totalWidth, trackTop, "Supplementary\nLock\n\$10-30", false),
-                  if (_widthAnimation.value > 0.35) ..._buildPositionedPoint(0.35, totalWidth, trackTop, "StrapIt\n\$24.90", true),
+                  if (_widthAnimation.value > 0.21) ..._buildPositionedPoint(0.21, totalWidth, trackTop, "StrapIt\n\$24.90", true),
                   if (_widthAnimation.value > 0.6) ..._buildPositionedPoint(0.6, totalWidth, trackTop, "Smart Door\nAlarm\n\$30-150", false),
                   if (_widthAnimation.value > 0.85) ..._buildPositionedPoint(0.85, totalWidth, trackTop, "Digital Smart\nLock\n\$150-500", false),
                 ],
