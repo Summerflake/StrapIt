@@ -35,48 +35,26 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAssets();
-    });
+    _initApp();
   }
 
-  Future<void> _loadAssets() async {
-    // 1. NON-BLOCKING LOAD
-    // We trigger the image loading in the background but DO NOT await it.
-    // This fixes the 10-second delay.
-    _preloadBackgroundImages();
-
-    // 2. Navigate immediately
-    // A small delay ensures the build cycle is complete, but it feels instant to the user.
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 50)); 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+  Future<void> _initApp() async {
+    // 1. ONLY precache the very first image user sees (The Hero Image).
+    // This reduces initial data load by ~90%.
+    try {
+      await precacheImage(const AssetImage('assets/image/hotel.jpg'), context);
+    } catch (e) {
+      debugPrint("Error precaching hero image: $e");
     }
-  }
 
-  void _preloadBackgroundImages() {
-    final images = [
-      'assets/image/hotel.jpg',
-      'assets/image/rental.jpg',
-      'assets/image/dorm.jpg',
-      'assets/image/home.jpg',
-      'assets/image/basement.jpg',
-      'assets/image/city.jpg',
-      'assets/image/social.jpg',
-      'assets/image/human.jpg',
-      'assets/image/crime.jpg',
-      'assets/image/explode.jpg',
-      'assets/image/clamp.jpg',
-    ];
-
-    for (String path in images) {
-      try {
-        precacheImage(AssetImage(path), context);
-      } catch (e) {
-        debugPrint("Background load failed for $path");
-      }
+    // 2. Navigate immediately after the first image is ready.
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomePage(),
+          transitionDuration: Duration.zero, // Instant switch, no animation lag
+        ),
+      );
     }
   }
 
@@ -85,6 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
     return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
+        // Simple loading indicator while fetching the first image
         child: CircularProgressIndicator(color: Colors.blueAccent),
       ),
     );
