@@ -181,14 +181,11 @@ class _DesktopNavItemState extends State<_DesktopNavItem> {
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
         cursor: SystemMouseCursors.click,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
+          // REMOVED BACKGROUND DECORATION AND COLOR ANIMATION
           margin: const EdgeInsets.symmetric(horizontal: 5),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: _isHovered ? Colors.blueAccent.withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
+          color: Colors.transparent, 
           child: Text(
             widget.title,
             style: TextStyle(

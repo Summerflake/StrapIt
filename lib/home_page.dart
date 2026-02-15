@@ -67,8 +67,9 @@ class _HomePageState extends State<HomePage> {
                   Container(key: sectionProductKey, child: const ProductSection()),
                   Container(key: sectionFeatureKey, child: const FeaturesSection()),
                   Container(key: sectionPricingKey, child: const PricingSection()),
-                  const DownloadSection(),
-                  const FooterSection(), // Added Footer here
+                  
+                  // Combined Download & Footer Section
+                  const FooterCombinedSection(), 
                 ],
               ),
             ),
@@ -244,45 +245,163 @@ class VideoSection extends StatelessWidget {
 // ============================================================================
 class ProductSection extends StatelessWidget {
   const ProductSection({super.key});
+
   @override
   Widget build(BuildContext context) {
-    bool isMobile = MediaQuery.of(context).size.width < 900;
+    double screenWidth = MediaQuery.of(context).size.width;
+    bool isMobile = screenWidth < 900;
+
+    final List<Map<String, String>> components = [
+      {'img': 'assets/image/esp32.jpg', 'name': 'ESP32 Controller'},
+      {'img': 'assets/image/rfp602.png', 'name': 'Force Sensor'},
+      {'img': 'assets/image/DCMotor.jpg', 'name': 'DC Motor'},
+      {'img': 'assets/image/Buzzer.jpg', 'name': 'Piezo Buzzer'},
+      {'img': 'assets/image/pushbutton.jpg', 'name': 'Push Buttons'},
+      {'img': 'assets/image/holder.jpg', 'name': 'Battery & Holder'},
+      {'img': 'assets/image/perfboard.jpg', 'name': 'PCB / Perfboard'},
+      {'img': 'assets/image/fiberstrap.jpg', 'name': 'UHMWPE Strap'},
+    ];
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 20),
       child: Column(
         children: [
           const Text("PRODUCT", style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)),
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
+          
           Container(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: const Text(
-              "StrapIt is a portable strap-based smart lock that reinforces doors and windows without drilling, replacing existing locks, or causing damage.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black87, fontSize: 24, height: 1.5, fontWeight: FontWeight.w300),
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Column(
+              children: [
+                const Text(
+                  "Your space, your rules. No drills, no damage, just total peace of mind.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87, 
+                    fontSize: 26, 
+                    fontWeight: FontWeight.bold,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                const Text(
+                  "StrapIt is a portable, non-intrusive smart security device that provides supplemental protection for doors and windows without altering, replacing, or interfering with existing lock mechanisms.\n\nWhether you’re in a city rental, a dorm room, or an Airbnb, StrapIt reinforces your space without a single drill hole. It doesn’t replace your lock, it makes it smarter.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54, 
+                    fontSize: 18, 
+                    height: 1.6, 
+                    fontWeight: FontWeight.w400
+                  ),
+                ),
+              ],
             ),
           ),
           
           const SizedBox(height: 80),
-          if (isMobile)
-            Column(
-              children: [
-                Image.asset('assets/image/explode.jpg', height: 300, fit: BoxFit.contain),
-                const SizedBox(height: 20),
-                Image.asset('assets/image/clamp.jpg', height: 200, fit: BoxFit.contain),
-              ],
-            )
-          else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                 Expanded(child: Image.asset('assets/image/explode.jpg', height: 500, fit: BoxFit.contain)),
-                 const SizedBox(width: 40),
-                 Expanded(child: Image.asset('assets/image/clamp.jpg', height: 400, fit: BoxFit.contain)),
+
+          Container(
+            width: screenWidth * 0.85,
+            constraints: const BoxConstraints(maxHeight: 700),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                )
               ],
             ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/image/clamp.jpg', 
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 80),
+
+          const Text("HARDWARE COMPONENTS", style: TextStyle(color: Colors.black45, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
+          const SizedBox(height: 40),
+
+          Container(
+            width: screenWidth * 0.85, 
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                int crossAxisCount = isMobile ? 2 : 4; 
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: components.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 20,
+                    mainAxisSpacing: 20,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemBuilder: (context, index) {
+                     return _ComponentCard(
+                       image: components[index]['img']!,
+                       name: components[index]['name']!,
+                     );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
+  }
+}
+
+class _ComponentCard extends StatelessWidget {
+  final String image;
+  final String name;
+
+  const _ComponentCard({required this.image, required this.name});
+
+  @override 
+  Widget build(BuildContext context) {
+     return Container(
+       padding: const EdgeInsets.all(10),
+       decoration: BoxDecoration(
+         color: Colors.white,
+         borderRadius: BorderRadius.circular(15),
+         boxShadow: [
+           BoxShadow(
+             color: Colors.black.withOpacity(0.05),
+             blurRadius: 10, 
+             offset: const Offset(0,5)
+           )
+         ],
+       ),
+       child: Column(
+         mainAxisAlignment: MainAxisAlignment.center,
+         children: [
+           Expanded(
+             child: ClipRRect(
+               borderRadius: BorderRadius.circular(10),
+               child: Image.asset(image, fit: BoxFit.contain),
+             ),
+           ),
+           const SizedBox(height: 12),
+           Text(
+             name, 
+             textAlign: TextAlign.center, 
+             style: const TextStyle(
+               fontWeight: FontWeight.bold, 
+               fontSize: 14, 
+               color: Colors.black87
+             )
+           ),
+           const SizedBox(height: 5),
+         ],
+       ),
+     );
   }
 }
 
@@ -295,8 +414,6 @@ class FeaturesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
     
-    // Updated padding: Remove horizontal padding on parent for Mobile 
-    // to allow images to be full width
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 80, horizontal: isMobile ? 0 : 20),
       child: Column(
@@ -306,13 +423,45 @@ class FeaturesSection extends StatelessWidget {
           _buildFeatureRow(isMobile, "1. Portable & Non-Destructive", "No drilling or permanent installation. No need to replace existing locks. Leaves no marks on doors or frames.", "assets/image/human.jpg", false),
           _buildFeatureRow(isMobile, "2. Intrusion Alarm", "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately.", "assets/image/crime.jpg", true),
           _buildFeatureRow(isMobile, "3. App-Controlled Smart Security", "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement.", "assets/image/dontknow.jpg", false),
+          
+          const SizedBox(height: 100),
+          
+          // --- VIDEO STAKEHOLDER (16:9) ---
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: AspectRatio(
+              aspectRatio: 16/9,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(20),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/image/city.jpg'), // Placeholder video thumbnail
+                    fit: BoxFit.cover,
+                    opacity: 0.6,
+                  ),
+                ),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.play_arrow, color: Colors.white, size: 50),
+                  ),
+                ),
+              ),
+            ),
+          )
         ],
       ),
     );
   }
 
   Widget _buildFeatureRow(bool isMobile, String title, String desc, String img, bool isReversed) {
-    // 1. Create content widgets
     Widget textContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -322,8 +471,6 @@ class FeaturesSection extends StatelessWidget {
       ],
     );
 
-    // On mobile, image should be full width, so we might remove the borderRadius or keep it 
-    // depending on style. Assuming "fit to screen width" means full bleed (0 margin).
     Widget imageContent = isMobile 
       ? Image.asset(img, height: 300, width: double.infinity, fit: BoxFit.cover)
       : ClipRRect(
@@ -331,9 +478,7 @@ class FeaturesSection extends StatelessWidget {
           child: Image.asset(img, height: 250, fit: BoxFit.cover)
         );
 
-    // 2. Layout
     if (isMobile) {
-      // Mobile: Image full width, Text with padding
       return Padding(
         padding: const EdgeInsets.only(bottom: 80),
         child: Column(
@@ -348,7 +493,6 @@ class FeaturesSection extends StatelessWidget {
         ),
       );
     } else {
-      // Desktop: Row layout
       return Padding(
         padding: const EdgeInsets.only(bottom: 100),
         child: Row(
@@ -370,7 +514,7 @@ class FeaturesSection extends StatelessWidget {
 }
 
 // ============================================================================
-// 4. PRICING SECTION
+// 4. PRICING SECTION (UPDATED: Back to Price Corridor)
 // ============================================================================
 class PricingSection extends StatelessWidget {
   const PricingSection({super.key});
@@ -379,7 +523,7 @@ class PricingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 1100;
     
-    // Components
+    // Using the corridor widget from earlier steps
     Widget priceCorridor = const PriceCorridor();
     Widget pricingCard = Container(
       width: 350,
@@ -394,7 +538,8 @@ class PricingSection extends StatelessWidget {
         children: [
           const Text("StrapIt", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
           const SizedBox(height: 10),
-          const Text("\$22.70", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+          const Text("\$16.74", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+          const Text("estimated hardware cost", style: TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 20),
           _checkItem("One-time purchase"),
           _checkItem("No installation cost"),
@@ -419,13 +564,12 @@ class PricingSection extends StatelessWidget {
         const Text("PRICING", style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)),
         const SizedBox(height: 20),
         const Text(
-          "secure, scalable, and affordable,\nfor anyone, anywhere.", 
+          "Unbeatable value compared to traditional solutions.", 
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 20, fontStyle: FontStyle.italic, color: Colors.grey)
         ),
         const SizedBox(height: 60),
         
-        // Layout: Side-by-Side on Desktop, Stacked on Mobile
         if (isMobile)
           Column(
             children: [
@@ -460,7 +604,6 @@ class PricingSection extends StatelessWidget {
         ),
         const SizedBox(height: 40),
         
-        // The Rolling Animation Widget
         const PartnerMarquee(),
         
         const SizedBox(height: 100),
@@ -507,32 +650,48 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-            children: const [
-              Text("LOW", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)), 
-              Text("MID", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)), 
-              Text("HIGH", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))
-            ]
-          ),
+          // REMOVED LOW/MID/HIGH labels
           const SizedBox(height: 10),
           AnimatedBuilder(
             animation: _widthAnimation,
             builder: (context, child) {
               return SizedBox(
-                height: 80, // Explicit height to prevent overlap
+                height: 140, // Increased height to prevent text clipping
                 child: Stack(
-                  alignment: Alignment.centerLeft,
+                  // Remove default alignment to allow specific positioning
                   children: [
                      // The Track
-                    Container(height: 8, width: double.infinity, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4))),
+                    Align(
+                      alignment: const Alignment(0, -0.3), // Move bar up visually
+                      child: Container(
+                        height: 8, 
+                        width: double.infinity, 
+                        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4))
+                      )
+                    ),
                     // The Colored Bar
-                    FractionallySizedBox(widthFactor: _widthAnimation.value, child: Container(height: 8, decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent]), borderRadius: BorderRadius.circular(4)))),
+                    Align(
+                      alignment: Alignment.centerLeft, // Constrain width from left
+                      child: FractionallySizedBox(
+                        widthFactor: _widthAnimation.value, 
+                        heightFactor: 1.0, // Take full height to allow internal alignment
+                        child: Align(
+                          alignment: const Alignment(0, -0.3), // Match track vertical position
+                          child: Container(
+                            height: 8, 
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent]), 
+                              borderRadius: BorderRadius.circular(4)
+                            )
+                          )
+                        )
+                      )
+                    ),
                     
                     // Points and Labels
-                    if (_widthAnimation.value > 0.1) ..._buildPoint(0.1, "\$22.70 (StrapIt)", true),
-                    if (_widthAnimation.value > 0.5) ..._buildPoint(0.5, "\$150", false),
-                    if (_widthAnimation.value > 0.9) ..._buildPoint(0.9, "\$500", false),
+                    if (_widthAnimation.value > 0.1) ..._buildPoint(0.1, "StrapIt\n\$16.74", true),
+                    if (_widthAnimation.value > 0.5) ..._buildPoint(0.5, "Mechanical\nLock\n\$40+", false),
+                    if (_widthAnimation.value > 0.9) ..._buildPoint(0.9, "Electronic\nLock\n\$200+", false),
                   ],
                 ),
               );
@@ -543,12 +702,15 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
     );
   }
 
-  // Adjusted to return List of Widgets (Dot + Label) for strict positioning
   List<Widget> _buildPoint(double alignX, String label, bool isActive) {
+    // Vertical alignment constants
+    const double barAlignY = -0.3;
+    const double textAlignY = 0.5; // Lower down for text
+
     return [
-      // 1. The Dot (Centered on the bar)
+      // 1. The Dot
       Align(
-        alignment: Alignment(alignX * 2 - 1, 0),
+        alignment: Alignment(alignX * 2 - 1, barAlignY),
         child: Container(
           width: 16, height: 16,
           decoration: BoxDecoration(
@@ -558,19 +720,18 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
           ),
         ),
       ),
-      // 2. The Label (Positioned strictly below)
+      // 2. The Label
       Align(
-        alignment: Alignment(alignX * 2 - 1, 0),
-        child: Container(
-          margin: const EdgeInsets.only(top: 40), // Push label down clearly below dot
-          child: Text(
-            label, 
-            style: TextStyle(
-              fontSize: 12, 
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal, 
-              color: isActive ? Colors.blueAccent : Colors.grey
-            )
-          ),
+        alignment: Alignment(alignX * 2 - 1, textAlignY),
+        child: Text(
+          label, 
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12, 
+            height: 1.3,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal, 
+            color: isActive ? Colors.blueAccent : Colors.grey
+          )
         ),
       )
     ];
@@ -647,7 +808,6 @@ class _ScrollingRowState extends State<_ScrollingRow> {
            _scrollController.jumpTo(_scrollController.offset + step);
         }
       } catch (e) {
-        // Silently catch scroll errors if layout is rebuilding
       }
     });
   }
@@ -688,140 +848,138 @@ class _ScrollingRowState extends State<_ScrollingRow> {
 }
 
 // ============================================================================
-// 5. DOWNLOAD SECTION (UPDATED)
+// 5. COMBINED DOWNLOAD & FOOTER SECTION
 // ============================================================================
-class DownloadSection extends StatelessWidget {
-  const DownloadSection({super.key});
+class FooterCombinedSection extends StatelessWidget {
+  const FooterCombinedSection({super.key});
+
   @override
   Widget build(BuildContext context) {
-    bool isMobile = MediaQuery.of(context).size.width < 600;
-    
+    bool isMobile = MediaQuery.of(context).size.width < 900;
+
+    Widget downloadContent = Column(
+      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        const Text("GET THE APP", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+          children: [
+             _buildAppStoreBtn(),
+             const SizedBox(width: 15),
+             _buildGooglePlayBtn(),
+          ],
+        )
+      ],
+    );
+
+    Widget footerContent = Column(
+      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.end,
+      children: [
+        Row(
+          mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.security, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text("StrapIt", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.end,
+          children: [
+            _socialIcon(Icons.camera_alt_outlined),
+            const SizedBox(width: 15),
+            _socialIcon(Icons.facebook),
+            const SizedBox(width: 15),
+            _socialIcon(Icons.play_circle_outline),
+          ],
+        ),
+        const SizedBox(height: 20),
+        const Text("support@strapit.com", style: TextStyle(color: Colors.blueAccent, fontSize: 16)),
+        const SizedBox(height: 5),
+        const Text("© 2026 StrapIt. All rights reserved.", style: TextStyle(color: Colors.grey, fontSize: 14)),
+      ],
+    );
+
     return Container(
       width: double.infinity,
       color: const Color(0xFF121212),
-      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
-      child: Column(
-        children: [
-          const Text("GET THE APP", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 40),
-          
-          // Updated Store Buttons
-          if (isMobile)
-            Column(
-              children: [
-                _storeBtn(Icons.apple, "Download on the", "App Store"),
-                const SizedBox(height: 15),
-                _storeBtn(Icons.android, "GET IT ON", "Google Play"),
-              ],
-            )
-          else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center, 
-              children: [
-                _storeBtn(Icons.apple, "Download on the", "App Store"),
-                const SizedBox(width: 20),
-                _storeBtn(Icons.android, "GET IT ON", "Google Play")
-              ]
-            ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 40),
+      child: isMobile 
+        ? Column(children: [downloadContent, const SizedBox(height: 60), footerContent])
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: downloadContent),
+              Expanded(child: footerContent),
+            ],
+          ),
     );
   }
 
-  // New Styled Button Widget
-  Widget _storeBtn(IconData icon, String subtext, String maintext) {
+  Widget _buildAppStoreBtn() {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {},
-        child: Container(
-          width: 180,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white24, width: 1),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 32),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(subtext, style: const TextStyle(color: Colors.white70, fontSize: 9, height: 1.0)),
-                  Text(maintext, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, height: 1.2)),
-                ],
-              )
-            ],
-          ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.apple, color: Colors.white, size: 36),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text("Download on the", style: TextStyle(color: Colors.white, fontSize: 10)),
+                Text("App Store", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            )
+          ],
         ),
       ),
     );
   }
-}
 
-// ============================================================================
-// 6. FOOTER SECTION (NEW)
-// ============================================================================
-class FooterSection extends StatelessWidget {
-  const FooterSection({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFFF9FAFB), // Light background like reference
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-      child: Column(
-        children: [
-          // Logo & Stakeholder
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent,
-                  borderRadius: BorderRadius.circular(8)
-                ),
-                child: const Icon(Icons.security, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              const Text("StrapIt", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
-            ],
-          ),
-          
-          const SizedBox(height: 30),
-          
-          // Social Icons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _socialIcon(Icons.camera_alt_outlined), // Instagram placeholder
-              const SizedBox(width: 15),
-              _socialIcon(Icons.facebook),
-              const SizedBox(width: 15),
-              _socialIcon(Icons.play_circle_outline), // Youtube placeholder
-            ],
-          ),
-          
-          const SizedBox(height: 30),
-          
-          // Contact Info
-          const Text(
-            "support@strapit.com", 
-            style: TextStyle(color: Colors.blueAccent, fontSize: 16)
-          ),
-          const SizedBox(height: 10),
-          
-          // Copyright
-          const Text(
-            "© 2026 StrapIt. All rights reserved.", 
-            style: TextStyle(color: Colors.grey, fontSize: 14)
-          ),
-        ],
+  Widget _buildGooglePlayBtn() {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Row(
+          children: [
+            ShaderMask(
+              shaderCallback: (Rect bounds) => const LinearGradient(
+                colors: [Colors.blue, Colors.red, Colors.yellow, Colors.green],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text("GET IT ON", style: TextStyle(color: Colors.white, fontSize: 10)),
+                Text("Google Play", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
