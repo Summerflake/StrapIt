@@ -89,7 +89,7 @@ class NavBar extends StatelessWidget {
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: const Text("Download / Buy", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text("Download", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ] 
               // --- MOBILE NAVIGATION ---
@@ -144,7 +144,7 @@ class NavBar extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   ),
-                  child: const Text("Download / Buy", style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: const Text("Download", style: TextStyle(color: Colors.white, fontSize: 16)),
                 ),
               ),
             ],

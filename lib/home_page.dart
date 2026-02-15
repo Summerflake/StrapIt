@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Added for SVG support
 import 'nav_bar.dart';
 import 'background.dart';
 
@@ -514,7 +515,7 @@ class FeaturesSection extends StatelessWidget {
 }
 
 // ============================================================================
-// 4. PRICING SECTION (UPDATED: Back to Price Corridor)
+// 4. PRICING SECTION
 // ============================================================================
 class PricingSection extends StatelessWidget {
   const PricingSection({super.key});
@@ -892,11 +893,11 @@ class FooterCombinedSection extends StatelessWidget {
         Row(
           mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.end,
           children: [
-            _socialIcon(Icons.camera_alt_outlined),
+            _socialSvgIcon('assets/image/instagram.svg'), // Using SVG for Instagram
             const SizedBox(width: 15),
             _socialIcon(Icons.facebook),
             const SizedBox(width: 15),
-            _socialIcon(Icons.play_circle_outline),
+            _socialSvgIcon('assets/image/youtube.svg'), // Using SVG for YouTube
           ],
         ),
         const SizedBox(height: 20),
@@ -962,13 +963,11 @@ class FooterCombinedSection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            ShaderMask(
-              shaderCallback: (Rect bounds) => const LinearGradient(
-                colors: [Colors.blue, Colors.red, Colors.yellow, Colors.green],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
+            // Using SvgPicture.asset as requested
+            SvgPicture.asset(
+              'assets/image/google-play-icon.svg', 
+              width: 30, // Adjusted size to fit container nicely
+              height: 30,
             ),
             const SizedBox(width: 8),
             Column(
@@ -988,6 +987,18 @@ class FooterCombinedSection extends StatelessWidget {
     return InkWell(
       onTap: (){},
       child: Icon(icon, color: Colors.grey[600], size: 28),
+    );
+  }
+
+  Widget _socialSvgIcon(String assetPath) {
+    return InkWell(
+      onTap: (){},
+      child: SvgPicture.asset(
+        assetPath,
+        width: 28,
+        height: 28,
+        colorFilter: ColorFilter.mode(Colors.grey[600]!, BlendMode.srcIn),
+      ),
     );
   }
 }
