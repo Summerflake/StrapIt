@@ -1,8 +1,8 @@
-import 'dart:async';
-import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'nav_bar.dart';
+import 'background.dart';
+import 'home_page.dart';
 
 class AboutUsPage extends StatefulWidget {
   const AboutUsPage({super.key});
@@ -11,24 +11,34 @@ class AboutUsPage extends StatefulWidget {
   State<AboutUsPage> createState() => _AboutUsPageState();
 }
 
-class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin {
-  // Scroll Controller
+class _AboutUsPageState extends State<AboutUsPage> {
   final ScrollController _scrollController = ScrollController();
-
-  // Animation Triggers
-  bool _showWhoWeAre = false;
-  bool _showMission = false;
-  bool _showProblem = false;
-  bool _showSocial = false;
-
-  // Team Cards Stagger
-  final List<bool> _visibleCards = List.generate(5, (_) => false);
+  final GlobalKey _statsKey = GlobalKey(); // Key to locate stats section
+  
+  bool _statsVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _triggerTeamAnimation();
-    _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (_statsVisible) return;
+
+    // Check if the stats section is visible on screen
+    if (_statsKey.currentContext != null) {
+      final RenderBox box = _statsKey.currentContext!.findRenderObject() as RenderBox;
+      final Offset position = box.localToGlobal(Offset.zero);
+      final double screenHeight = MediaQuery.of(context).size.height;
+
+      // Trigger when the top of the stats section enters the bottom 25% of the viewport
+      if (position.dy < screenHeight * 0.90) {
+        if (mounted) {
+          setState(() => _statsVisible = true);
+        }
+      }
+    }
   }
 
   @override
@@ -37,257 +47,237 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
     super.dispose();
   }
 
-  void _triggerTeamAnimation() {
-    for (int i = 0; i < 5; i++) {
-      Timer(Duration(milliseconds: 300 * (i + 1)), () {
-        if (mounted) {
-          setState(() {
-            _visibleCards[i] = true;
-          });
-        }
-      });
-    }
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-
-    double offset = _scrollController.offset;
-    double maxScroll = _scrollController.position.maxScrollExtent;
-
-    // --- TRIGGER THRESHOLDS ---
-    if (offset > 100 && !_showWhoWeAre) setState(() => _showWhoWeAre = true);
-    if (offset > 400 && !_showMission) setState(() => _showMission = true);
-    if (offset > 700 && !_showProblem) setState(() => _showProblem = true);
-    if (offset > 1000 && !_showSocial) setState(() => _showSocial = true);
-
-    // --- SAFETY TRIGGER (Force show if at bottom) ---
-    if (offset >= maxScroll - 50) {
-      if (!_showSocial || !_showProblem) {
-        setState(() {
-          _showWhoWeAre = true;
-          _showMission = true;
-          _showProblem = true;
-          _showSocial = true;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    bool isMobile = screenWidth < 900;
+    double horizontalPadding = isMobile ? 20 : 60;
+    
+    double spacing = 20;
+    int columns = isMobile ? 1 : 3;
+    double totalSpacing = spacing * (columns - 1);
+    double availableWidth = screenWidth - (horizontalPadding * 2);
+    double cardWidth = (availableWidth - totalSpacing) / columns;
+    if (cardWidth < 100) cardWidth = 100;
+
+    // Header Style Reference
+    TextStyle headerStyle = const TextStyle(
+        color: Colors.blueAccent,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 4);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // --- LAYER 0: BACKGROUND ---
-          const Positioned.fill(child: AnimatedBackground()),
+          const Positioned.fill(child: GlobalBackground()),
 
-          // --- LAYER 1: CONTENT ---
-          Positioned.fill(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  const NavBar(),
+          SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              children: [
+                const NavBar(isHome: false),
 
-                  // ------------------------------------------
-                  // 1. TEAM INTRODUCTION
-                  // ------------------------------------------
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40, bottom: 60),
-                    child: SizedBox(
+                const SizedBox(height: 60),
+
+                // 1. WHO WE ARE (MERGED WITH VISION & MISSION)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    children: [
+                      Text("WHO WE ARE", style: headerStyle),
+                      const SizedBox(height: 50),
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Column(
+                          children: [
+                            // VISION SUB-SECTION
+                            _buildInfoSection(
+                              title: "Our Vision",
+                              description: "A future where security is not fixed to buildings, but moves with people. To secure every space, everywhere. To reimagine security for a mobile world.",
+                            ),
+                            
+                            const SizedBox(height: 60),
+
+                            // MISSION SUB-SECTION
+                            _buildInfoSection(
+                              title: "Our Mission",
+                              description: "To make personal security portable, affordable, and effortless, wherever people stay."
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 80),
+
+                // 2. TEAM INTRODUCTION (Previously #3)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    children: [
+                      Text("TEAM INTRODUCTION", style: headerStyle),
+                      const SizedBox(height: 40),
+                      Wrap(
+                        spacing: spacing,
+                        runSpacing: spacing,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          TeamMemberCard(width: cardWidth, name: "XinYu", role: "Project Manager & DS Lead", description: "Owns delivery governance and Machine-Learning training."),
+                          TeamMemberCard(width: cardWidth, name: "Jiachuan", role: "R&D Lead", description: "Curates regional food datasets and aligns features with nutrition evidence."),
+                          TeamMemberCard(width: cardWidth, name: "ChengAo", role: "Application Development", description: "In charge of UI/UX and API integration."),
+                          TeamMemberCard(width: cardWidth, name: "XiaoYu", role: "Community Manager", description: "Runs user analytics, A/B testing, and UAT prior to CI/CD releases."),
+                          TeamMemberCard(width: cardWidth, name: "BangYan", role: "Marketing", description: "Leads go-to-market strategy and monetization."),
+                          TeamMemberCard(width: cardWidth, name: "You!", role: "Future Partner", description: "We look forward for you to join us!"),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 80),
+
+                // 3. THE PROBLEM (Previously #4)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                      vertical: 80, horizontal: horizontalPadding),
+                  color: Colors.white.withOpacity(0.5),
+                  child: Column(
+                    children: [
+                      Text("THE PROBLEM WE ADDRESS", style: headerStyle),
+                      const SizedBox(height: 30),
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: const Text(
+                          "Urban living, frequent travel, and shared accommodations have increased exposure to unauthorized entry, while existing solutions force users to choose between high cost, permanent installation, or limited protection.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 16, height: 1.6, fontWeight: FontWeight.w400, color: Colors.black87),
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                      
+                      const Text("Burglary Statistics (2024-2025)",
+                          style: TextStyle(fontSize: 14, color: Colors.grey)),
+                      const SizedBox(height: 40),
+
+                      // STATS ROW WITH ROLLING NUMBERS
+                      Container(
+                        key: _statsKey,
+                        child: Wrap(
+                          spacing: 60,
+                          runSpacing: 40,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "60,000+", 
+                              label: "Offenses Reported\nin the US"
+                            ),
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "< 20%", 
+                              label: "Clearance Rate\n(Cases Solved)"
+                            ),
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "130%", 
+                              label: "Population Coverage\nof Reports"
+                            ),
+                            // 'Rising' doesn't have a number, so we handle it as simple text
+                            RollingStatItem(
+                              isVisible: _statsVisible,
+                              targetString: "Rising", 
+                              label: "Trend Analysis\n2024 - 2025"
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 80),
+
+                // 4. TARGET AUDIENCE (Previously #5)
+                Stack(
+                  children: [
+                    Container(
+                      height: 500,
                       width: double.infinity,
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildAnimatedCard(0, "XinYu", "Project Manager &\nData Science Lead", "Owns delivery governance and Machine-Learning training."),
-                            _buildAnimatedCard(1, "Jiachuan", "Development Lead", "Delivering UI/UX and API integration."),
-                            _buildAnimatedCard(2, "XiaoYu", "Community Manager", "Runs user analytics, A/B testing, and UAT prior to CI/CD releases."),
-                            _buildAnimatedCard(3, "BangYan", "Marketing Lead", "Leading go-to-market strategy and monetization."),
-                            _buildAnimatedCard(4, "ChengAo", "R&D Lead", "In charge of Application architecture and feature alignment."),
-                          ],
-                        ),
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                           image: AssetImage('assets/image/social.jpg'),
+                           fit: BoxFit.cover,
+                        )
                       ),
                     ),
-                  ),
-
-                  // ------------------------------------------
-                  // 2. WHO WE ARE
-                  // ------------------------------------------
-                  _buildSectionHeader("Who We Are"),
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 800),
-                    opacity: _showWhoWeAre ? 1.0 : 0.0,
-                    child: AnimatedSlide(
-                      duration: const Duration(milliseconds: 800),
-                      curve: Curves.easeOutQuad,
-                      offset: _showWhoWeAre ? Offset.zero : const Offset(0, 0.1),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20),
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w300, height: 1.5, fontFamily: 'Roboto'),
-                            children: [
-                              const TextSpan(text: "We are a team driven by a simple belief: personal safety should be "),
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.baseline,
-                                baseline: TextBaseline.alphabetic,
-                                child: AnimatedUnderlineText(text: "accessible, adaptable, and effortless.", trigger: _showWhoWeAre, delay: 500),
-                              ),
-                              const TextSpan(text: "\n\nStrapIt was created to bridge the gap between expensive smart locks and basic mechanical devices, offering reliable security without complexity or permanent installation.\n\n"),
-                              const TextSpan(text: "Designed by students and engineers focused on affordable, human-scale security.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ),
+                    Container(
+                      height: 500,
+                      width: double.infinity,
+                      color: Colors.black.withOpacity(0.6),
                     ),
-                  ),
-
-                  const SizedBox(height: 80),
-
-                  // ------------------------------------------
-                  // 3. OUR MISSION
-                  // ------------------------------------------
-                  _buildSectionHeader("Our Mission"),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 1500),
-                        curve: Curves.easeInOut,
-                        width: _showMission ? 800 : 0,
-                        height: 2,
-                        decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.blueAccent, Colors.blueAccent.withOpacity(0.0)])),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStaggeredText("Our mission is to empower people to feel secure wherever they stay — at home, in rentals, or while travelling —", delay: 200, isVisible: _showMission),
-                        const SizedBox(height: 10),
-                        _buildStaggeredText("by delivering a portable, user-controlled security solution that combines physical reinforcement with smart alert technology.", delay: 1000, isVisible: _showMission),
-                        const SizedBox(height: 30),
-                        _buildStaggeredText("Security should travel with you. StrapIt makes that possible.", delay: 1800, isVisible: _showMission, isBold: true),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 100),
-
-                  // ------------------------------------------
-                  // 4. THE PROBLEM WE ADDRESS
-                  // ------------------------------------------
-                  _buildSectionHeader("The Problem We Address"),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20),
-                    child: _buildStaggeredText(
-                      "Urban living, frequent travel, and shared accommodations have increased exposure to unauthorized entry. Existing solutions force users to choose between high cost, permanent installation, or limited protection. Many people remain unprotected simply because current locks are not portable, affordable, or adaptable.",
-                      delay: 0,
-                      isVisible: _showProblem,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  
-                  // NEW IMAGE LAYOUT
-                  FractionallySizedBox(
-                    widthFactor: 0.85,
-                    child: Column(
-                      children: [
-                        // Row for the first two images with FIXED HEIGHT
-                        SizedBox(
-                          height: 350, 
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch, 
-                            children: [
-                              Expanded(
-                                child: _buildAnimatedImage("assets/image/city.jpg", 0, _showProblem),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: _buildAnimatedImage("assets/image/aboutus.png", 300, _showProblem),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Bottom image (Statistic)
-                        SizedBox(
-                          height: 350,
-                          width: double.infinity,
-                          child: _buildAnimatedImage("assets/image/statistic.png", 600, _showProblem),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 100),
-
-                  // ------------------------------------------
-                  // 5. SOCIAL CREDIBILITY
-                  // ------------------------------------------
-                  _buildSectionHeader("Social Credibility"),
-                  
-                  // Text Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30),
-                    child: AnimatedOpacity(
-                      opacity: _showSocial ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 1000),
-                      child: RichText(
-                        textAlign: TextAlign.left,
-                        text: TextSpan(
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26, 
-                            fontWeight: FontWeight.w300,
-                            height: 2.0, 
-                            fontFamily: 'Roboto'
-                          ),
-                          children: [
-                            const TextSpan(text: "Targeting "),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: _buildScalingKeyword(" 20–30-year-old ", _showSocial, 200),
+                    Container(
+                      height: 500,
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("TARGET AUDIENCE", style: headerStyle.copyWith(color: Colors.white)),
+                          const SizedBox(height: 40),
+                          Container(
+                            padding: const EdgeInsets.all(30),
+                            constraints: const BoxConstraints(maxWidth: 900),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white24)
                             ),
-                            const TextSpan(text: " individuals living alone, as well as tourists seeking secure and flexible security solutions.\n\nStrapIt will reach users through "),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: _buildScalingKeyword("Instagram ", _showSocial, 600),
+                            child: RichText(
+                              textAlign: TextAlign.center,
+                              text: const TextSpan(
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w300,
+                                    height: 1.5,
+                                    fontFamily: 'Montserrat'),
+                                children: [
+                                  TextSpan(text: "Targeting "),
+                                  TextSpan(
+                                      text: "23-39-year-old individuals",
+                                      style: TextStyle(
+                                          color: Colors.blueAccent,
+                                          fontWeight: FontWeight.bold)),
+                                  TextSpan(
+                                      text:
+                                          " living alone, as well as tourists seeking secure and flexible security solutions.\n\nStrapIt will reach users through "),
+                                  TextSpan(
+                                      text: "Instagram, TikTok",
+                                      style: TextStyle(
+                                          color: Colors.blueAccent,
+                                          fontWeight: FontWeight.bold)),
+                                  TextSpan(
+                                      text:
+                                          " and targeted digital and travel-oriented channels."),
+                                ],
+                              ),
                             ),
-                            const TextSpan(text: ", "),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: _buildScalingKeyword(" TikTok", _showSocial, 800),
-                            ),
-                            const TextSpan(text: " and targeted digital and travel-oriented channels."),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-
-                  // --- NEW SOCIAL IMAGE ADDED HERE ---
-                  const SizedBox(height: 20),
-                  FractionallySizedBox(
-                    widthFactor: 0.85,
-                    child: SizedBox(
-                      height: 400, // Fixed height banner style
-                      child: _buildAnimatedImage("assets/image/social.jpg", 1200, _showSocial), // Delayed slightly to appear after text
-                    ),
-                  ),
-
-                  const SizedBox(height: 150),
-                ],
-              ),
+                  ],
+                ),
+                
+                // Uses the updated footer from home_page.dart
+                const FooterCombinedSection(),
+              ],
             ),
           ),
         ],
@@ -295,192 +285,40 @@ class _AboutUsPageState extends State<AboutUsPage> with TickerProviderStateMixin
     );
   }
 
-  // --- HELPERS ---
-
-  Widget _buildAnimatedImage(String assetPath, int delay, bool trigger) {
-    return FutureBuilder(
-      future: Future.delayed(Duration(milliseconds: delay)),
-      builder: (context, snapshot) {
-          final bool isReady = trigger && (delay == 0 || snapshot.connectionState == ConnectionState.done);
-          
-          return AnimatedOpacity(
-            duration: const Duration(milliseconds: 800),
-            opacity: isReady ? 1.0 : 0.0,
-            curve: Curves.easeOut,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutQuad,
-              transform: Matrix4.translationValues(0, isReady ? 0 : 50, 0), 
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    )
-                  ]
-                ),
-                child: Image.asset(
-                  assetPath,
-                  fit: BoxFit.cover, 
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white10,
-                    child: Center(child: Text("Missing: $assetPath", style: const TextStyle(color: Colors.red))),
-                  ),
-                ),
-              ),
-            ),
-          );
-      }
-    );
-  }
-
-  Widget _buildScalingKeyword(String text, bool trigger, int delay) {
-    return FutureBuilder(
-      future: Future.delayed(Duration(milliseconds: delay)),
-      builder: (context, snapshot) {
-        bool showEffect = trigger && snapshot.connectionState == ConnectionState.done;
-        
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 1.0, end: showEffect ? 1.15 : 1.0),
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.elasticOut,
-          builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: showEffect ? Colors.cyanAccent : Colors.white,
-                    fontSize: 26,
-                    fontWeight: showEffect ? FontWeight.bold : FontWeight.w300,
-                    shadows: showEffect ? [
-                      const Shadow(blurRadius: 10, color: Colors.cyan, offset: Offset(0,0))
-                    ] : [],
-                  ),
-                ),
-              ),
-            );
-          }
-        );
-      }
-    );
-  }
-
-  Widget _buildStaggeredText(String text, {required int delay, required bool isVisible, bool isBold = false}) {
-    return FutureBuilder(
-      future: Future.delayed(Duration(milliseconds: delay)),
-      builder: (context, snapshot) {
-         final showNow = isVisible && snapshot.connectionState == ConnectionState.done;
-         return AnimatedOpacity(
-           opacity: showNow ? 1.0 : 0.0,
-           duration: const Duration(milliseconds: 600),
-           child: AnimatedPadding(
-             duration: const Duration(milliseconds: 600),
-             padding: showNow ? EdgeInsets.zero : const EdgeInsets.only(top: 20),
-             child: Text(
-                text,
-                style: TextStyle(
-                  color: isBold ? Colors.blueAccent : Colors.white,
-                  fontSize: isBold ? 26 : 24,
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.w300,
-                  height: 1.5,
-                ),
-              ),
-           ),
-         );
-      }
-    );
-  }
-
-  Widget _buildAnimatedCard(int index, String name, String role, String description) {
-    return Expanded(
-      child: AnimatedOpacity(
-        opacity: _visibleCards[index] ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeOut,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: TeamMemberCard(name: name, role: role, description: description),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title.toUpperCase(),
+  // HELPER FOR CONSISTENT INFO SECTIONS
+  Widget _buildInfoSection({required String title, required String description}) {
+    return Column(
+      children: [
+        // Title matched to headers (No gradient, Blue Accent, Spaced)
+        Text(
+          title,
           style: const TextStyle(
             color: Colors.blueAccent,
-            fontSize: 24,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-            shadows: [Shadow(blurRadius: 10.0, color: Colors.blueAccent, offset: Offset(0, 0))],
+            letterSpacing: 4,
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// ANIMATED UNDERLINE TEXT
-// ---------------------------------------------------------------------------
-class AnimatedUnderlineText extends StatefulWidget {
-  final String text;
-  final bool trigger;
-  final int delay;
-
-  const AnimatedUnderlineText({super.key, required this.text, required this.trigger, this.delay = 0});
-
-  @override
-  State<AnimatedUnderlineText> createState() => _AnimatedUnderlineTextState();
-}
-
-class _AnimatedUnderlineTextState extends State<AnimatedUnderlineText> {
-  double _widthFactor = 0.0;
-
-  @override
-  void didUpdateWidget(covariant AnimatedUnderlineText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.trigger && !oldWidget.trigger) {
-      Timer(Duration(milliseconds: widget.delay), () {
-        if (mounted) setState(() => _widthFactor = 1.0);
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Text(widget.text, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w400, height: 1.5)),
-        Positioned(
-          bottom: 2, left: 0, right: 0,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Align(
-                alignment: Alignment.centerLeft,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.easeOut,
-                  height: 2,
-                  width: constraints.maxWidth * _widthFactor,
-                  color: Colors.cyanAccent,
-                ),
-              );
-            },
+        const SizedBox(height: 12),
+        // Decorative Gradient Underline
+        Container(
+          width: 50,
+          height: 3,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            gradient: const LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent]),
+          ),
+        ),
+        const SizedBox(height: 25),
+        // Consistent Body Text - Grey (No ShaderMask)
+        Text(
+          description,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 18, 
+            height: 1.6, 
+            fontWeight: FontWeight.w400,
+            color: Colors.black54, // Restored to Grey
           ),
         ),
       ],
@@ -488,144 +326,258 @@ class _AnimatedUnderlineTextState extends State<AnimatedUnderlineText> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// TEAM CARD
-// ---------------------------------------------------------------------------
-class TeamMemberCard extends StatefulWidget {
-  final String name;
-  final String role;
-  final String description;
+// -----------------------------------------------------------
+//  ROLLING NUMBER / SLOT MACHINE EFFECT STAT ITEM
+// -----------------------------------------------------------
+class RollingStatItem extends StatelessWidget {
+  final bool isVisible;
+  final String targetString;
+  final String label;
 
-  const TeamMemberCard({super.key, required this.name, required this.role, required this.description});
-
-  @override
-  State<TeamMemberCard> createState() => _TeamMemberCardState();
-}
-
-class _TeamMemberCardState extends State<TeamMemberCard> {
-  bool _isHovered = false;
+  const RollingStatItem({
+    super.key,
+    required this.isVisible,
+    required this.targetString,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
+    // 1. Check if it's a numeric stat
+    final String numericOnly = targetString.replaceAll(RegExp(r'[^0-9]'), '');
+    final bool isNumeric = numericOnly.isNotEmpty;
+
+    // Common Style
+    const TextStyle statStyle = TextStyle(
+      color: Colors.blueAccent,
+      fontSize: 56,
+      fontWeight: FontWeight.bold,
+      height: 1.1, // Fix height for alignment
+    );
+
+    Widget content;
+
+    if (!isNumeric) {
+      // Non-numeric case (e.g. "Rising")
+      content = AnimatedOpacity(
+        opacity: isVisible ? 1.0 : 0.0,
+        duration: const Duration(seconds: 1),
+        child: Text(
+          targetString,
+          style: statStyle,
+        ),
+      );
+    } else {
+      // Numeric Slot Machine Case
+      // Count digits to calculate staggered duration
+      List<Widget> rowChildren = [];
+      int totalDigits = numericOnly.length;
+      int currentDigitIdx = 0;
+
+      for (int i = 0; i < targetString.length; i++) {
+        String char = targetString[i];
+        if (RegExp(r'[0-9]').hasMatch(char)) {
+          // It is a digit
+          currentDigitIdx++;
+          // Staggered Duration: 
+          // Base time (500ms) + Stagger based on position
+          // Last digit finishes at ~1200ms
+          double durationMs = 500 + (700 * (currentDigitIdx / totalDigits));
+          
+          rowChildren.add(_SpinningDigit(
+            targetDigit: int.parse(char),
+            duration: Duration(milliseconds: durationMs.toInt()),
+            isVisible: isVisible,
+            style: statStyle,
+          ));
+        } else {
+          // Static char (comma, +, %)
+          rowChildren.add(Text(char, style: statStyle));
+        }
+      }
+
+      content = AnimatedOpacity(
+        opacity: isVisible ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-        transform: Matrix4.translationValues(0, _isHovered ? -15 : 0, 0),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(_isHovered ? 0.08 : 0.03),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _isHovered ? Colors.blueAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1), width: 1),
-          boxShadow: _isHovered ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))] : [],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: rowChildren,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 50, height: 50,
-              decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
-              child: Center(child: Text(widget.name[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20))),
-            ),
-            const SizedBox(height: 20),
-            Text(widget.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 5),
-            Text(widget.role, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-            const SizedBox(height: 20),
-            AnimatedOpacity(
-              opacity: _isHovered ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: Text(widget.description, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
-            ),
-          ],
+      );
+    }
+
+    return Column(
+      children: [
+        content,
+        const SizedBox(height: 10),
+        AnimatedOpacity(
+          opacity: isVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 800),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.4),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// ANIMATED BACKGROUND
-// ---------------------------------------------------------------------------
-class AnimatedBackground extends StatefulWidget {
-  const AnimatedBackground({super.key});
+class _SpinningDigit extends StatefulWidget {
+  final int targetDigit;
+  final Duration duration;
+  final bool isVisible;
+  final TextStyle style;
+
+  const _SpinningDigit({
+    super.key,
+    required this.targetDigit,
+    required this.duration,
+    required this.isVisible,
+    required this.style,
+  });
 
   @override
-  State<AnimatedBackground> createState() => _AnimatedBackgroundState();
+  State<_SpinningDigit> createState() => _SpinningDigitState();
 }
 
-class _AnimatedBackgroundState extends State<AnimatedBackground> {
-  Alignment _align1 = Alignment.topLeft;
-  Alignment _align2 = Alignment.bottomRight;
-  Alignment _align3 = Alignment.topRight;
-  Alignment _align4 = Alignment.bottomLeft;
-  Alignment _align5 = Alignment.center;
-  Alignment _align6 = Alignment.topCenter;
-
-  Timer? _timer;
+class _SpinningDigitState extends State<_SpinningDigit> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  final double _digitHeight = 62.0; // Matches fontSize + slight padding
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startAnimation();
-    });
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    // easeOutCubic gives a nice "settle" effect
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic); 
+
+    if (widget.isVisible) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_SpinningDigit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible && !oldWidget.isVisible) {
+      _controller.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _controller.dispose();
     super.dispose();
-  }
-
-  void _startAnimation() {
-    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (mounted) {
-        setState(() {
-          _align1 = _randomAlignment();
-          _align2 = _randomAlignment();
-          _align3 = _randomAlignment();
-          _align4 = _randomAlignment();
-          _align5 = _randomAlignment();
-          _align6 = _randomAlignment();
-        });
-      }
-    });
-  }
-
-  Alignment _randomAlignment() {
-    final Random random = Random();
-    return Alignment(random.nextDouble() * 2 - 1, random.nextDouble() * 2 - 1);
   }
 
   @override
   Widget build(BuildContext context) {
-    const double blurSigma = 100.0; 
-    return Stack(
-      children: [
-        Container(color: const Color(0xFF151515)),
-        _buildBlob(_align1, Colors.blueAccent.withOpacity(0.4), 400),
-        _buildBlob(_align2, Colors.purple.withOpacity(0.4), 400),
-        _buildBlob(_align3, Colors.cyanAccent.withOpacity(0.3), 300),
-        _buildBlob(_align4, Colors.pinkAccent.withOpacity(0.25), 300),
-        _buildBlob(_align5, Colors.indigo.withOpacity(0.5), 250),
-        _buildBlob(_align6, Colors.deepOrange.withOpacity(0.2), 200),
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-          child: Container(color: Colors.transparent),
+    // Generate a strip of numbers.
+    // Order: [Target, 9, 8, ... 0, 9, 8 ... ]
+    // We animate visual offset to move numbers DOWN (Up to Down).
+    // This means the strip effectively slides down.
+    
+    List<int> strip = [];
+    strip.add(widget.targetDigit);
+    
+    // Add 3 cycles of 9..0 to ensure enough length for high speed
+    for (int k = 0; k < 3; k++) {
+      for (int i = 9; i >= 0; i--) {
+        strip.add(i);
+      }
+    }
+    
+    double totalHeight = strip.length * _digitHeight;
+    
+    return SizedBox(
+      height: _digitHeight,
+      width: 42.0, // Fixed width to prevent jitter
+      child: ClipRect(
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            // Animate from Bottom of strip (hidden randoms) to Top of strip (Target)
+            double startOffset = totalHeight - _digitHeight;
+            double currentOffset = startOffset * (1.0 - _animation.value);
+            
+            return Stack(
+              children: [
+                Positioned(
+                  top: -currentOffset, 
+                  left: 0, right: 0,
+                  child: Column(
+                    children: strip.map((d) => SizedBox(
+                      height: _digitHeight,
+                      child: Center(child: Text('$d', style: widget.style)),
+                    )).toList(),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildBlob(Alignment alignment, Color color, double size) {
-    return AnimatedAlign(
-      duration: const Duration(seconds: 4),
-      curve: Curves.easeInOutSine,
-      alignment: alignment,
-      child: Container(width: size, height: size, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+class TeamMemberCard extends StatelessWidget {
+  final String name;
+  final String role;
+  final String description;
+  final double width;
+
+  const TeamMemberCard({
+    super.key, 
+    required this.name, 
+    required this.role, 
+    required this.description,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width, 
+      height: 340, 
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5))
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          CircleAvatar(
+              backgroundColor: Colors.grey[200],
+              radius: 35,
+              child: Icon(Icons.person, color: Colors.grey[400], size: 40)),
+          const SizedBox(height: 20),
+          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(height: 8),
+          Text(role,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, color: Colors.blueAccent, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          Text(description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.5)),
+        ],
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'nav_bar.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'home_page.dart';
 
 void main() {
   runApp(const StrapitApp());
@@ -14,105 +15,77 @@ class StrapitApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Strapit - Secure Anywhere',
-      theme: ThemeData(brightness: Brightness.dark),
-      home: const MainLandingPage(),
+      theme: ThemeData(
+        brightness: Brightness.light, 
+        textTheme: GoogleFonts.montserratTextTheme(),
+      ),
+      home: const SplashScreen(),
     );
   }
 }
 
-class MainLandingPage extends StatefulWidget {
-  const MainLandingPage({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<MainLandingPage> createState() => _MainLandingPageState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _MainLandingPageState extends State<MainLandingPage> {
-  int _currentIdx = 0;
-  late Timer _timer;
-
-  final List<Map<String, String>> _heroData = [
-    {'image': 'assets/image/hotel.jpg', 'label': 'Hotel room doors'},
-    {'image': 'assets/image/rental.jpg', 'label': 'Rental apartments'},
-    {'image': 'assets/image/dorm.jpg', 'label': 'Dormitories'},
-    {'image': 'assets/image/home.jpg', 'label': 'Home doors'},
-    {'image': 'assets/image/basement.jpg', 'label': 'Basements'},
-  ];
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      setState(() {
-        _currentIdx = (_currentIdx + 1) % _heroData.length;
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAssets();
     });
   }
 
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
+  Future<void> _loadAssets() async {
+    // 1. NON-BLOCKING LOAD
+    // We trigger the image loading in the background but DO NOT await it.
+    // This fixes the 10-second delay.
+    _preloadBackgroundImages();
+
+    // 2. Navigate immediately
+    // A small delay ensures the build cycle is complete, but it feels instant to the user.
+    if (mounted) {
+      await Future.delayed(const Duration(milliseconds: 50)); 
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    }
+  }
+
+  void _preloadBackgroundImages() {
+    final images = [
+      'assets/image/hotel.jpg',
+      'assets/image/rental.jpg',
+      'assets/image/dorm.jpg',
+      'assets/image/home.jpg',
+      'assets/image/basement.jpg',
+      'assets/image/city.jpg',
+      'assets/image/social.jpg',
+      'assets/image/human.jpg',
+      'assets/image/crime.jpg',
+      'assets/image/explode.jpg',
+      'assets/image/clamp.jpg',
+    ];
+
+    for (String path in images) {
+      try {
+        precacheImage(AssetImage(path), context);
+      } catch (e) {
+        debugPrint("Background load failed for $path");
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 1000),
-              child: Container(
-                key: ValueKey<int>(_currentIdx),
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(_heroData[_currentIdx]['image']!),
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                        Colors.black.withOpacity(0.4), BlendMode.darken),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "SECURE ANY DOOR",
-                  style: TextStyle(
-                    fontSize: 64,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: Text(
-                    "Perfect for ${_heroData[_currentIdx]['label']}",
-                    key: ValueKey<String>(_heroData[_currentIdx]['label']!),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Replaced manual header with the reusable NavBar
-          const Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: NavBar(),
-          ),
-        ],
+    return const Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: CircularProgressIndicator(color: Colors.blueAccent),
       ),
     );
   }
