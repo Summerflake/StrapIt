@@ -1,16 +1,19 @@
 import 'dart:ui'; // Required for ImageFilter
 import 'package:flutter/material.dart';
-import 'home_page.dart'; // Imports the Page and the GlobalKeys
+import 'home_page.dart'; // Imports the Page
 import 'about_us.dart';
+import 'client_prototype.dart'; // Imports the new Prototype Page
 
 class NavBar extends StatelessWidget {
   final bool isHome;
   final ScrollController? scrollController; // Only required if isHome is true
+  final Function(String)? onNavigateToSection; // 接收来自 HomePage 的滚动控制权
 
   const NavBar({
     super.key, 
     required this.isHome, 
-    this.scrollController
+    this.scrollController,
+    this.onNavigateToSection,
   });
 
   @override
@@ -38,10 +41,11 @@ class NavBar extends StatelessWidget {
                     // Scroll to Top
                     scrollController?.animateTo(0, duration: const Duration(seconds: 1), curve: Curves.easeInOut);
                   } else {
-                    // Navigate to Home
-                    Navigator.pushReplacement(
+                    // Navigate to Home safely and reset stack
+                    Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => const HomePage()),
+                      (route) => false,
                     );
                   }
                 },
@@ -60,29 +64,16 @@ class NavBar extends StatelessWidget {
 
               // --- DESKTOP NAVIGATION ---
               if (!isMobile) ...[
-                _DesktopNavItem(title: "Product", actionId: 'product', isHome: isHome),
-                _DesktopNavItem(title: "Features", actionId: 'features', isHome: isHome),
-                _DesktopNavItem(title: "Pricing", actionId: 'pricing', isHome: isHome),
-                _DesktopNavItem(title: "About Us", actionId: 'about', isHome: isHome),
+                _DesktopNavItem(title: "Product", actionId: 'product', isHome: isHome, onNavigateToSection: onNavigateToSection),
+                _DesktopNavItem(title: "Features", actionId: 'features', isHome: isHome, onNavigateToSection: onNavigateToSection),
+                _DesktopNavItem(title: "Prototype", actionId: 'prototype', isHome: isHome, onNavigateToSection: onNavigateToSection), 
+                _DesktopNavItem(title: "About Us", actionId: 'about', isHome: isHome, onNavigateToSection: onNavigateToSection),
                 
                 const SizedBox(width: 20),
                 
-                // Download Button (Scrolls to bottom)
+                // Download Button 
                 ElevatedButton(
-                  onPressed: () {
-                    if (isHome) {
-                      scrollController?.animateTo(
-                        scrollController!.position.maxScrollExtent, 
-                        duration: const Duration(seconds: 1), 
-                        curve: Curves.easeInOut
-                      );
-                    } else {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomePage(initialSection: 'download')),
-                      );
-                    }
-                  },
+                  onPressed: () => _handleNavigation(context, 'pricing', isHome, onNavigateToSection),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
                     padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
@@ -117,10 +108,10 @@ class NavBar extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _MobileNavItem(context: context, title: "Product", actionId: "product", isHome: isHome, scrollController: scrollController),
-              _MobileNavItem(context: context, title: "Features", actionId: "features", isHome: isHome, scrollController: scrollController),
-              _MobileNavItem(context: context, title: "Pricing", actionId: "pricing", isHome: isHome, scrollController: scrollController),
-              _MobileNavItem(context: context, title: "About Us", actionId: "about", isHome: isHome, scrollController: scrollController),
+              _MobileNavItem(context: context, title: "Product", actionId: "product", isHome: isHome, onNavigateToSection: onNavigateToSection),
+              _MobileNavItem(context: context, title: "Features", actionId: "features", isHome: isHome, onNavigateToSection: onNavigateToSection),
+              _MobileNavItem(context: context, title: "Prototype", actionId: "prototype", isHome: isHome, onNavigateToSection: onNavigateToSection),
+              _MobileNavItem(context: context, title: "About Us", actionId: "about", isHome: isHome, onNavigateToSection: onNavigateToSection),
               
               const SizedBox(height: 20),
               
@@ -129,15 +120,7 @@ class NavBar extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context); // Close menu
-                    if (isHome) {
-                      scrollController?.animateTo(
-                        scrollController!.position.maxScrollExtent, 
-                        duration: const Duration(seconds: 1), 
-                        curve: Curves.easeInOut
-                      );
-                    } else {
-                       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage(initialSection: 'download')));
-                    }
+                    _handleNavigation(context, 'pricing', isHome, onNavigateToSection);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
@@ -161,10 +144,11 @@ class NavBar extends StatelessWidget {
 
 class _DesktopNavItem extends StatefulWidget {
   final String title;
-  final String actionId; // 'product', 'features', 'pricing', 'about'
+  final String actionId; 
   final bool isHome;
+  final Function(String)? onNavigateToSection;
 
-  const _DesktopNavItem({required this.title, required this.actionId, required this.isHome});
+  const _DesktopNavItem({required this.title, required this.actionId, required this.isHome, this.onNavigateToSection});
 
   @override
   State<_DesktopNavItem> createState() => _DesktopNavItemState();
@@ -176,13 +160,12 @@ class _DesktopNavItemState extends State<_DesktopNavItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _handleNavigation(context, widget.actionId, widget.isHome),
+      onTap: () => _handleNavigation(context, widget.actionId, widget.isHome, widget.onNavigateToSection),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
         cursor: SystemMouseCursors.click,
         child: Container(
-          // REMOVED BACKGROUND DECORATION AND COLOR ANIMATION
           margin: const EdgeInsets.symmetric(horizontal: 5),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: Colors.transparent, 
@@ -205,14 +188,14 @@ class _MobileNavItem extends StatelessWidget {
   final String title;
   final String actionId;
   final bool isHome;
-  final ScrollController? scrollController;
+  final Function(String)? onNavigateToSection;
 
   const _MobileNavItem({
     required this.context,
     required this.title,
     required this.actionId,
     required this.isHome,
-    this.scrollController,
+    this.onNavigateToSection,
   });
 
   @override
@@ -222,7 +205,7 @@ class _MobileNavItem extends StatelessWidget {
       trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black.withOpacity(0.5)),
       onTap: () {
         Navigator.pop(context); // Close mobile menu first
-        _handleNavigation(context, actionId, isHome);
+        _handleNavigation(context, actionId, isHome, onNavigateToSection);
       },
     );
   }
@@ -231,34 +214,39 @@ class _MobileNavItem extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // SHARED NAVIGATION LOGIC
 // ---------------------------------------------------------------------------
-void _handleNavigation(BuildContext context, String actionId, bool isHome) {
-  // 1. Handle "About Us" (Separate Page)
+void _handleNavigation(BuildContext context, String actionId, bool isHome, Function(String)? onNavigateToSection) {
+  // 1. Handle "About Us" and "Prototype" (Separate Pages)
   if (actionId == 'about') {
-    if (!isHome) return; // Already there
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsPage()));
+    if (isHome) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsPage()));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AboutUsPage()));
+    }
+    return;
+  }
+  
+  if (actionId == 'prototype') {
+    if (isHome) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const ClientPrototypePage()));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ClientPrototypePage()));
+    }
     return;
   }
 
   // 2. Handle Scroll Sections (Product, Features, Pricing)
   if (isHome) {
-    // If we are already on Home, find the key and scroll to it
-    GlobalKey? targetKey;
-    if (actionId == 'product') targetKey = sectionProductKey;
-    if (actionId == 'features') targetKey = sectionFeatureKey;
-    if (actionId == 'pricing') targetKey = sectionPricingKey;
-
-    if (targetKey != null && targetKey.currentContext != null) {
-      Scrollable.ensureVisible(
-        targetKey.currentContext!,
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeInOut,
-      );
+    // 触发传进来的回调函数进行滚动
+    if (onNavigateToSection != null) {
+      onNavigateToSection(actionId);
     }
   } else {
-    // If we are NOT on Home (e.g. About Us), navigate to Home with an initial trigger
-    Navigator.pushReplacement(
+    // If we are NOT on Home (e.g. About Us or Prototype), navigate to Home with an initial trigger.
+    // 核心修复点：采用 pushAndRemoveUntil 彻底清空旧栈，防止页面堆叠产生多个 HomePage 报错
+    Navigator.pushAndRemoveUntil(
       context, 
-      MaterialPageRoute(builder: (context) => HomePage(initialSection: actionId))
+      MaterialPageRoute(builder: (context) => HomePage(initialSection: actionId)),
+      (route) => false,
     );
   }
 }

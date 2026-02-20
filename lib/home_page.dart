@@ -5,12 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'nav_bar.dart';
 import 'background.dart';
 
-// --- Global Keys for Navigation Scrolling ---
-final GlobalKey sectionMainKey = GlobalKey();
-final GlobalKey sectionProductKey = GlobalKey();
-final GlobalKey sectionFeatureKey = GlobalKey();
-final GlobalKey sectionPricingKey = GlobalKey();
-
 class HomePage extends StatefulWidget {
   final String? initialSection;
 
@@ -22,6 +16,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
+  
+  // 修复核心：将 GlobalKey 移入 State 内部，防止多次页面入栈时出现 Duplicate GlobalKeys 报错
+  final GlobalKey _sectionMainKey = GlobalKey();
+  final GlobalKey _sectionProductKey = GlobalKey();
+  final GlobalKey _sectionFeatureKey = GlobalKey();
+  final GlobalKey _sectionPricingKey = GlobalKey();
 
   @override
   void initState() {
@@ -35,9 +35,9 @@ class _HomePageState extends State<HomePage> {
 
   void _scrollToSection(String section) {
     GlobalKey? target;
-    if (section == 'product') target = sectionProductKey;
-    if (section == 'features') target = sectionFeatureKey;
-    if (section == 'pricing') target = sectionPricingKey;
+    if (section == 'product') target = _sectionProductKey;
+    if (section == 'features') target = _sectionFeatureKey;
+    if (section == 'pricing') target = _sectionPricingKey;
 
     if (target != null && target.currentContext != null) {
       Scrollable.ensureVisible(
@@ -60,14 +60,16 @@ class _HomePageState extends State<HomePage> {
               controller: _scrollController,
               child: Column(
                 children: [
-                  Container(key: sectionMainKey, child: const HeroSection()),
+                  Container(key: _sectionMainKey, child: const HeroSection()),
                   
                   // Video Section
                   const VideoSection(),
 
-                  Container(key: sectionProductKey, child: const ProductSection()),
-                  Container(key: sectionFeatureKey, child: const FeaturesSection()),
-                  Container(key: sectionPricingKey, child: const PricingSection()),
+                  Container(key: _sectionProductKey, child: const ProductSection()),
+                  Container(key: _sectionFeatureKey, child: const FeaturesSection()),
+                  
+                  // Pricing 移动到了底部
+                  Container(key: _sectionPricingKey, child: const PricingSection()),
                   
                   // Combined Download & Footer Section
                   const FooterCombinedSection(), 
@@ -77,7 +79,11 @@ class _HomePageState extends State<HomePage> {
           ),
           Positioned(
             top: 0, left: 0, right: 0,
-            child: NavBar(isHome: true, scrollController: _scrollController),
+            child: NavBar(
+              isHome: true, 
+              scrollController: _scrollController,
+              onNavigateToSection: _scrollToSection, // 传入回调函数给 NavBar
+            ),
           ),
         ],
       ),
@@ -125,16 +131,13 @@ class _HeroSectionState extends State<HeroSection> {
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 1000),
-              // Use Key to trigger transition
               child: Container(
                 key: ValueKey<int>(_currentIdx),
                 width: double.infinity,
                 height: double.infinity,
-                // Using Stack to layer Image + Dark Filter
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // OPTIMIZATION: FrameBuilder allows immediate rendering
                     Image.asset(
                       _heroData[_currentIdx]['image']!,
                       fit: BoxFit.cover,
@@ -148,7 +151,6 @@ class _HeroSectionState extends State<HeroSection> {
                         );
                       },
                     ),
-                    // Dark Overlay
                     Container(color: Colors.black.withOpacity(0.4)),
                   ],
                 ),
@@ -213,7 +215,6 @@ class VideoSection extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Video Thumbnail with optimized loading
                   ClipRRect(
                     borderRadius: BorderRadius.circular(30),
                     child: Image.asset(
@@ -346,14 +347,13 @@ class ProductSection extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              // OPTIMIZATION: Main Product Image Placeholder
               child: Image.asset(
                 'assets/image/clamp.jpg', 
                 fit: BoxFit.cover,
                 frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                   if (wasSynchronouslyLoaded) return child;
                   return frame == null 
-                    ? Container(color: Colors.grey[200], height: 400) // Placeholder
+                    ? Container(color: Colors.grey[200], height: 400) 
                     : child;
                 },
               ),
@@ -423,7 +423,6 @@ class _ComponentCard extends StatelessWidget {
            Expanded(
              child: ClipRRect(
                borderRadius: BorderRadius.circular(10),
-               // OPTIMIZATION: Component Icons Placeholder
                child: Image.asset(
                  image, 
                  fit: BoxFit.contain,
@@ -493,7 +492,6 @@ class FeaturesSection extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // OPTIMIZATION: Feature Images Placeholder
           ClipRRect(
             borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
             child: Image.asset(
@@ -509,7 +507,6 @@ class FeaturesSection extends StatelessWidget {
               },
             ),
           ),
-          // Dark Overlay
           Container(
             height: isMobile ? 300 : 250,
             width: double.infinity,
@@ -518,7 +515,6 @@ class FeaturesSection extends StatelessWidget {
               borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
             ),
           ),
-          // Play Button Icon
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -568,7 +564,7 @@ class FeaturesSection extends StatelessWidget {
 }
 
 // ============================================================================
-// 4. PRICING SECTION
+// 4. PRICING SECTION (MOVED TO BOTTOM)
 // ============================================================================
 class PricingSection extends StatelessWidget {
   const PricingSection({super.key});
@@ -577,7 +573,6 @@ class PricingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 1100;
     
-    // Using the corridor widget from earlier steps
     Widget priceCorridor = const PriceCorridor();
     Widget pricingCard = Container(
       width: 350,
@@ -612,55 +607,58 @@ class PricingSection extends StatelessWidget {
       ),
     );
 
-    return Column(
-      children: [
-        const Text("PRICING", style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)),
-        const SizedBox(height: 20),
-        const Text(
-          "Unbeatable value compared to traditional solutions.", 
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20, fontStyle: FontStyle.italic, color: Colors.grey)
-        ),
-        const SizedBox(height: 60),
-        
-        if (isMobile)
-          Column(
-            children: [
-              priceCorridor,
-              const SizedBox(height: 60),
-              pricingCard,
-            ],
-          )
-        else
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              priceCorridor, // Left
-              const SizedBox(width: 80),
-              pricingCard, // Right
-            ],
-          ),
-        
-        const SizedBox(height: 100),
-        
-        // --- TARGET PARTNER SECTION ---
-        const Text("TARGET PARTNERS", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black)),
-        const SizedBox(height: 15),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            "Service, Distribution, and Public Safety Partners",
+    return Container(
+      padding: const EdgeInsets.only(top: 80),
+      child: Column(
+        children: [
+          const Text("PRICING", style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)),
+          const SizedBox(height: 20),
+          const Text(
+            "Unbeatable value compared to traditional solutions.", 
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: Colors.black54),
+            style: TextStyle(fontSize: 20, fontStyle: FontStyle.italic, color: Colors.grey)
           ),
-        ),
-        const SizedBox(height: 40),
-        
-        const PartnerMarquee(),
-        
-        const SizedBox(height: 100),
-      ],
+          const SizedBox(height: 60),
+          
+          if (isMobile)
+            Column(
+              children: [
+                priceCorridor,
+                const SizedBox(height: 60),
+                pricingCard,
+              ],
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                priceCorridor, 
+                const SizedBox(width: 80),
+                pricingCard, 
+              ],
+            ),
+          
+          const SizedBox(height: 100),
+          
+          // --- TARGET PARTNER SECTION ---
+          const Text("TARGET PARTNERS", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black)),
+          const SizedBox(height: 15),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              "Service, Distribution, and Public Safety Partners",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Colors.black54),
+            ),
+          ),
+          const SizedBox(height: 40),
+          
+          const PartnerMarquee(),
+          
+          const SizedBox(height: 80),
+        ],
+      ),
     );
   }
 
@@ -700,18 +698,17 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Detect mobile layout to adjust label position
     bool isMobile = MediaQuery.of(context).size.width < 1100;
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 800),
-      height: 150, // Fixed height to manage positioning
+      height: 150, 
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double totalWidth = constraints.maxWidth;
-          final double trackTop = 70.0; // Moved down to accommodate top label
+          final double trackTop = 70.0; 
           
           return AnimatedBuilder(
             animation: _widthAnimation,
@@ -719,7 +716,6 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // 1. The Track Background
                   Positioned(
                     top: trackTop,
                     left: 0, 
@@ -730,7 +726,6 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
                     ),
                   ),
                   
-                  // 2. The Colored Bar (Animated Width)
                   Positioned(
                     top: trackTop,
                     left: 0,
@@ -744,12 +739,6 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
                     ),
                   ),
                   
-                  // 3. Points and Labels
-                  // SHIFTED StrapIt LEFT:
-                  // 0.1 (Supplementary) -> 0.28 (StrapIt) = Gap 0.18
-                  // 0.28 (StrapIt) -> 0.6 (Smart Door) = Gap 0.32
-                  // The gaps are now unequal as requested.
-                  // FIX: Pass isMobile to isTop parameter for StrapIt label
                   if (_widthAnimation.value > 0.1) ..._buildPositionedPoint(0.1, totalWidth, trackTop, "Supplementary\nLock\n\$10-30", false),
                   if (_widthAnimation.value > 0.21) ..._buildPositionedPoint(0.21, totalWidth, trackTop, "StrapIt\n\$24.90", true, isTop: isMobile),
                   if (_widthAnimation.value > 0.6) ..._buildPositionedPoint(0.6, totalWidth, trackTop, "Smart Door\nAlarm\n\$30-150", false),
@@ -763,24 +752,15 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
     );
   }
 
-  // Returns widgets for Dot and Label
   List<Widget> _buildPositionedPoint(double alignX, double totalWidth, double trackTop, String label, bool isActive, {bool isTop = false}) {
-    // Dot size
     const double dotSize = 16.0;
-    
-    // Calculate precise Left position for the center of the element
     final double leftPos = totalWidth * alignX;
-    
-    // Determine label vertical position
-    // If on top, move up by ~55px (adjust as needed for font size)
     final double labelTop = isTop ? trackTop - 55 : trackTop + 20;
 
     return [
-      // 1. The Dot
-      // Centered exactly on the track line
       Positioned(
         left: leftPos - (dotSize / 2),
-        top: trackTop + (8 / 2) - (dotSize / 2), // Track height is 8, so +4 is center.
+        top: trackTop + (8 / 2) - (dotSize / 2), 
         child: Container(
           width: dotSize, 
           height: dotSize,
@@ -791,11 +771,8 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
           ),
         ),
       ),
-      
-      // 2. The Label
-      // Centered horizontally below or above the dot
       Positioned(
-        left: leftPos - 60, // Width 120, so offset 60 to center
+        left: leftPos - 60, 
         width: 120, 
         top: labelTop, 
         child: Text(
@@ -812,6 +789,7 @@ class _PriceCorridorState extends State<PriceCorridor> with SingleTickerProvider
     ];
   }
 }
+
 // ============================================================================
 // PARTNER MARQUEE
 // ============================================================================
@@ -931,14 +909,13 @@ class FooterCombinedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
 
-    // Modified Download Content: ALWAYS centered
     Widget downloadContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.center, // Forced Center
+      crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
         const Text("GET THE APP", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center, // Forced Center
+          mainAxisAlignment: MainAxisAlignment.center, 
           children: [
              _buildAppStoreBtn(),
              const SizedBox(width: 15),
@@ -967,11 +944,11 @@ class FooterCombinedSection extends StatelessWidget {
         Row(
           mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.end,
           children: [
-            _socialSvgIcon('assets/image/instagram.svg'), // Using SVG for Instagram
+            _socialSvgIcon('assets/image/instagram.svg'), 
             const SizedBox(width: 15),
             _socialIcon(Icons.facebook),
             const SizedBox(width: 15),
-            _socialSvgIcon('assets/image/youtube.svg'), // Using SVG for YouTube
+            _socialSvgIcon('assets/image/youtube.svg'), 
           ],
         ),
         const SizedBox(height: 20),
@@ -989,7 +966,7 @@ class FooterCombinedSection extends StatelessWidget {
         ? Column(children: [downloadContent, const SizedBox(height: 60), footerContent])
         : Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center, // Aligns download and footer vertically centered
+            crossAxisAlignment: CrossAxisAlignment.center, 
             children: [
               Expanded(child: downloadContent),
               Expanded(child: footerContent),
@@ -1037,10 +1014,9 @@ class FooterCombinedSection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Using SvgPicture.asset as requested
             SvgPicture.asset(
               'assets/image/google-play-icon.svg', 
-              width: 30, // Adjusted size to fit container nicely
+              width: 30, 
               height: 30,
             ),
             const SizedBox(width: 8),
