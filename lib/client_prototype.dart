@@ -56,9 +56,42 @@ class ClientPrototypePage extends StatelessWidget {
                               // 右侧手机模型 (覆盖在上方，嵌入原生交互式的 App Demo)
                               Transform.translate(
                                 offset: Offset(isMobile ? 40 : 100, 0),
-                                child: PhoneMockup(
-                                  height: phoneHeight,
-                                  child: const InteractiveAppDemo(), // <--- 替换为可交互的组件
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  alignment: Alignment.center,
+                                  children: [
+                                    PhoneMockup(
+                                      height: phoneHeight,
+                                      child: const InteractiveAppDemo(), // 可交互的组件
+                                    ),
+                                    // 新增的交互提示词，置于手机正下方
+                                    Positioned(
+                                      bottom: isMobile ? -50 : -60,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blueAccent.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(Icons.touch_app, color: Colors.blueAccent, size: 20),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "Click to interact", 
+                                              style: TextStyle(
+                                                color: Colors.blueAccent, 
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.2
+                                              )
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],

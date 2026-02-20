@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/gestures.dart'; // 引入以支持富文本点击事件
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; 
 import 'nav_bar.dart';
 import 'background.dart';
+import 'client_prototype.dart'; // 引入以支持路由跳转到原型页
 
 class HomePage extends StatefulWidget {
   final String? initialSection;
@@ -17,6 +19,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
   
+  // 控制顶部 Promo Banner 的显示状态
+  bool _showPromoBanner = true;
+  late TapGestureRecognizer _promoTapRecognizer;
+  
   // 将 GlobalKey 移入 State 内部，防止多次页面入栈时出现 Duplicate GlobalKeys 报错
   final GlobalKey _sectionMainKey = GlobalKey();
   final GlobalKey _sectionProductKey = GlobalKey();
@@ -26,11 +32,28 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    
+    // 初始化富文本的点击手势
+    _promoTapRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (context) => const ClientPrototypePage())
+        );
+      };
+
     if (widget.initialSection != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToSection(widget.initialSection!);
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _promoTapRecognizer.dispose(); // 释放手势识别器避免内存泄漏
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToSection(String section) {
@@ -55,11 +78,76 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           const Positioned.fill(child: GlobalBackground()),
+          
           Positioned.fill(
             child: SingleChildScrollView(
               controller: _scrollController,
               child: Column(
                 children: [
+                  // --- PROMO BANNER (紧贴 NavBar 下方的独立 Block) ---
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: _showPromoBanner
+                        ? Column(
+                            children: [
+                              // 占位符：精确抵消顶部悬浮 NavBar 的高度 (91px)，确保下方的 Banner 完美衔接在其正下方
+                              const SizedBox(height: 91.0),
+                              
+                              // 横幅本体
+                              Container(
+                                width: double.infinity,
+                                color: const Color(0xFF1E293B), // 深色横幅背景更像 Snackbar
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                                child: Row(
+                                  children: [
+                                    const SizedBox(width: 24), // 左侧占位符，用于平衡右侧的关闭图标，使文字绝对居中
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          style: const TextStyle(
+                                            color: Colors.white, 
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          children: [
+                                            const TextSpan(text: "Try out our StrapIt client "),
+                                            TextSpan(
+                                              text: "here",
+                                              style: const TextStyle(
+                                                color: Color(0xFF60A5FA), // 浅蓝色高亮
+                                                decoration: TextDecoration.underline,
+                                                decorationColor: Color(0xFF60A5FA),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              recognizer: _promoTapRecognizer, // 绑定点击事件
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _showPromoBanner = false; // 关闭横幅，整个区块会高度变0，下方的网页自然上移
+                                          });
+                                        },
+                                        child: const Icon(Icons.close, size: 20, color: Colors.white70),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox(width: double.infinity, height: 0),
+                  ),
+                  // --------------------------------------------------
+
+                  // 页面主体内容
                   Container(key: _sectionMainKey, child: const HeroSection()),
                   
                   // Video Section
@@ -77,12 +165,14 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+          
+          // 悬浮在最顶部的 NavBar
           Positioned(
             top: 0, left: 0, right: 0,
             child: NavBar(
               isHome: true, 
               scrollController: _scrollController,
-              onNavigateToSection: _scrollToSection, // 传入回调函数给 NavBar
+              onNavigateToSection: _scrollToSection, 
             ),
           ),
         ],
@@ -910,7 +1000,6 @@ class FooterCombinedSection extends StatelessWidget {
     bool isMobile = MediaQuery.of(context).size.width < 900;
 
     // Modified Download Content: ALWAYS centered
-    // 修复小屏幕溢出：将 Row 改为 Wrap
     Widget downloadContent = Column(
       crossAxisAlignment: CrossAxisAlignment.center, // Forced Center
       children: [
@@ -938,7 +1027,7 @@ class FooterCombinedSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-              child: Image.asset('assets/image/logo.png', width: 50, height: 50),
+              child: Image.asset('assets/image/logo.png', width: 24, height: 24, fit: BoxFit.contain),
             ),
             const SizedBox(width: 10),
             const Text("StrapIt", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
