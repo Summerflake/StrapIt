@@ -49,14 +49,21 @@ class NavBar extends StatelessWidget {
                     );
                   }
                 },
-                child: const Text(
-                  "STRAPIT",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                    letterSpacing: 2,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset('assets/image/logo.png', height: 50, fit: BoxFit.contain),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "STRAPIT",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               

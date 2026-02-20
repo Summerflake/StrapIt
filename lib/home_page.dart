@@ -17,7 +17,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
   
-  // 修复核心：将 GlobalKey 移入 State 内部，防止多次页面入栈时出现 Duplicate GlobalKeys 报错
+  // 将 GlobalKey 移入 State 内部，防止多次页面入栈时出现 Duplicate GlobalKeys 报错
   final GlobalKey _sectionMainKey = GlobalKey();
   final GlobalKey _sectionProductKey = GlobalKey();
   final GlobalKey _sectionFeatureKey = GlobalKey();
@@ -909,22 +909,26 @@ class FooterCombinedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
 
+    // Modified Download Content: ALWAYS centered
+    // 修复小屏幕溢出：将 Row 改为 Wrap
     Widget downloadContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.center, 
+      crossAxisAlignment: CrossAxisAlignment.center, // Forced Center
       children: [
         const Text("GET THE APP", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center, 
+        Wrap(
+          alignment: WrapAlignment.center, // Forced Center
+          spacing: 15,
+          runSpacing: 15,
           children: [
              _buildAppStoreBtn(),
-             const SizedBox(width: 15),
              _buildGooglePlayBtn(),
           ],
         )
       ],
     );
 
+    // Footer Content 包含带白色底框的 Logo
     Widget footerContent = Column(
       crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.end,
       children: [
@@ -933,8 +937,8 @@ class FooterCombinedSection extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.security, color: Colors.white, size: 20),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+              child: Image.asset('assets/image/logo.png', width: 50, height: 50),
             ),
             const SizedBox(width: 10),
             const Text("StrapIt", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -986,6 +990,7 @@ class FooterCombinedSection extends StatelessWidget {
           border: Border.all(color: Colors.white24),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.apple, color: Colors.white, size: 36),
             const SizedBox(width: 8),
@@ -1013,6 +1018,7 @@ class FooterCombinedSection extends StatelessWidget {
           border: Border.all(color: Colors.white24),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             SvgPicture.asset(
               'assets/image/google-play-icon.svg', 
