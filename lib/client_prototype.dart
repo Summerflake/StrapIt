@@ -36,7 +36,18 @@ class ClientPrototypePage extends StatelessWidget {
                           "CLIENT PROTOTYPE", 
                           style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)
                         ),
-                        const SizedBox(height: 80),
+                        const SizedBox(height: 12),
+                        // 新增：在标题下方的一行小字提示词
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Click to interact",
+                              style: TextStyle(color: Colors.grey[600], fontSize: 15, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 70),
                         
                         SizedBox(
                           height: isMobile ? 550 : 700, // 设定一个固定的画幅高度来容纳重叠的手机
@@ -56,42 +67,9 @@ class ClientPrototypePage extends StatelessWidget {
                               // 右侧手机模型 (覆盖在上方，嵌入原生交互式的 App Demo)
                               Transform.translate(
                                 offset: Offset(isMobile ? 40 : 100, 0),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  alignment: Alignment.center,
-                                  children: [
-                                    PhoneMockup(
-                                      height: phoneHeight,
-                                      child: const InteractiveAppDemo(), // 可交互的组件
-                                    ),
-                                    // 新增的交互提示词，置于手机正下方
-                                    Positioned(
-                                      bottom: isMobile ? -50 : -60,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blueAccent.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: const [
-                                            Icon(Icons.touch_app, color: Colors.blueAccent, size: 20),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              "Click to interact", 
-                                              style: TextStyle(
-                                                color: Colors.blueAccent, 
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 1.2
-                                              )
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                child: PhoneMockup(
+                                  height: phoneHeight,
+                                  child: const InteractiveAppDemo(), // 可交互的组件
                                 ),
                               ),
                             ],
