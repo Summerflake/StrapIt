@@ -1052,7 +1052,7 @@ class FooterCombinedSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        const Text("support@strapit.com", style: TextStyle(color: Colors.blueAccent, fontSize: 16)),
+        const Text("strapit.secure@gmail.com", style: TextStyle(color: Colors.blueAccent, fontSize: 16)),
         const SizedBox(height: 5),
         const Text("© 2026 StrapIt. All rights reserved.", style: TextStyle(color: Colors.grey, fontSize: 14)),
       ],
