@@ -7,7 +7,7 @@ import 'package:model_viewer_plus/model_viewer_plus.dart'; // Add Model Viewer I
 import 'nav_bar.dart';
 import 'background.dart';
 import 'client_prototype.dart'; 
-
+import 'package:flutter/foundation.dart'; // Add this to check for Release/Debug mode
 class HomePage extends StatefulWidget {
   final String? initialSection;
 
@@ -444,21 +444,26 @@ class ProductSection extends StatelessWidget {
               // The interactive 3D Model viewer replaces Image.asset
              // The interactive 3D Model viewer replaces Image.asset
 child: ModelViewer(
-  backgroundColor: const Color(0xFFF5F5F7), 
-  src: 'assets/models/strap_it.glb', 
-  alt: 'Interactive 3D model of StrapIt',
-  ar: false, 
-  autoRotate: true, 
-  cameraControls: true, 
-  disableZoom: false,
-  
-  // --- UPDATED VISUAL QUALITY SETTINGS ---
-  environmentImage: 'neutral', 
-  shadowIntensity: 1.0,        // Changed from 1.5 to 1.0 (Maximum allowed)
-  shadowSoftness: 1.0,         // Keeps the shadow edge soft and realistic
-  exposure: 1.1,               
-  cameraOrbit: "45deg 55deg auto", 
-),
+                backgroundColor: const Color(0xFFF5F5F7), 
+                
+                // --- THE FALLBACK FIX ---
+                // If the app is deployed on Render (Release Mode), it uses the double-assets path.
+                // If you are testing locally (Debug Mode), it uses the standard path.
+                src: kReleaseMode 
+                    ? 'assets/assets/models/strap_it.glb' 
+                    : 'assets/models/strap_it.glb', 
+                    
+                alt: 'Interactive 3D model of StrapIt',
+                ar: false, 
+                autoRotate: true, 
+                cameraControls: true, 
+                disableZoom: false,
+                environmentImage: 'neutral', 
+                shadowIntensity: 1.0,        
+                shadowSoftness: 1.0,         
+                exposure: 1.1,               
+                cameraOrbit: "45deg 55deg auto", 
+              ),
             ),
           ),
           
