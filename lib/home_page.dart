@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/gestures.dart'; // 引入以支持富文本点击事件
+import 'package:flutter/gestures.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; 
+import 'package:model_viewer_plus/model_viewer_plus.dart'; // Add Model Viewer Import
 import 'nav_bar.dart';
 import 'background.dart';
-import 'client_prototype.dart'; // 引入以支持路由跳转到原型页
+import 'client_prototype.dart'; 
 
 class HomePage extends StatefulWidget {
   final String? initialSection;
@@ -422,10 +423,13 @@ class ProductSection extends StatelessWidget {
           
           const SizedBox(height: 80),
 
+          // --- 3D INTERACTIVE MODEL SECTION ---
           Container(
             width: screenWidth * 0.85,
+            height: 500, // Explicit height for the 3D viewer
             constraints: const BoxConstraints(maxHeight: 700),
             decoration: BoxDecoration(
+              color: Colors.white, // Solid background to make 3D model pop
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -437,16 +441,24 @@ class ProductSection extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                'assets/image/clamp.jpg', 
-                fit: BoxFit.cover,
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded) return child;
-                  return frame == null 
-                    ? Container(color: Colors.grey[200], height: 400) 
-                    : child;
-                },
-              ),
+              // The interactive 3D Model viewer replaces Image.asset
+             // The interactive 3D Model viewer replaces Image.asset
+child: ModelViewer(
+  backgroundColor: const Color(0xFFF5F5F7), 
+  src: 'assets/models/strap_it.glb', 
+  alt: 'Interactive 3D model of StrapIt',
+  ar: false, 
+  autoRotate: true, 
+  cameraControls: true, 
+  disableZoom: false,
+  
+  // --- UPDATED VISUAL QUALITY SETTINGS ---
+  environmentImage: 'neutral', 
+  shadowIntensity: 1.0,        // Changed from 1.5 to 1.0 (Maximum allowed)
+  shadowSoftness: 1.0,         // Keeps the shadow edge soft and realistic
+  exposure: 1.1,               
+  cameraOrbit: "45deg 55deg auto", 
+),
             ),
           ),
           

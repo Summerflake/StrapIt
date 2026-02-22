@@ -114,7 +114,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 80),
 
-                // 2. TEAM INTRODUCTION (Previously #3)
+                // 2. TEAM INTRODUCTION 
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
@@ -126,12 +126,42 @@ class _AboutUsPageState extends State<AboutUsPage> {
                         runSpacing: spacing,
                         alignment: WrapAlignment.center,
                         children: [
-                          TeamMemberCard(width: cardWidth, name: "XinYu", role: "Project Manager & DS Lead", description: "Owns delivery governance and Machine-Learning training."),
-                          TeamMemberCard(width: cardWidth, name: "Jiachuan", role: "R&D Lead", description: "Curates regional food datasets and aligns features with nutrition evidence."),
-                          TeamMemberCard(width: cardWidth, name: "ChengAo", role: "Application Development", description: "In charge of UI/UX and API integration."),
-                          TeamMemberCard(width: cardWidth, name: "XiaoYu", role: "Community Manager", description: "Runs user analytics, A/B testing, and UAT prior to CI/CD releases."),
-                          TeamMemberCard(width: cardWidth, name: "BangYan", role: "Marketing", description: "Leads go-to-market strategy and monetization."),
-                          TeamMemberCard(width: cardWidth, name: "You!", role: "Future Partner", description: "We look forward for you to join us!"),
+                          TeamMemberCard(
+                            width: cardWidth, 
+                            imagePath: 'assets/image/xinyu.jpg',
+                            name: "Xin Yu", 
+                            role: "Project Manager & Strategy Lead", 
+                          ),
+                          TeamMemberCard(
+                            width: cardWidth, 
+                            imagePath: 'assets/image/chengao.jpg',
+                            name: "Cheng Ao", 
+                            role: "Marketing Lead", 
+                          ),
+                          TeamMemberCard(
+                            width: cardWidth, 
+                            imagePath: 'assets/image/zhengyue.jpg',
+                            name: "Zhengyue", 
+                            role: "Chief Commercial Officer", 
+                          ),
+                          TeamMemberCard(
+                            width: cardWidth, 
+                            imagePath: 'assets/image/lexin.jpg',
+                            name: "Le Xin", 
+                            role: "Chief Performance Officer", 
+                          ),
+                          TeamMemberCard(
+                            width: cardWidth, 
+                            imagePath: 'assets/image/haina.jpg',
+                            name: "Haina", 
+                            role: "Chief Growth & Intelligence Officer", 
+                          ),
+                          TeamMemberCard(
+                            width: cardWidth, 
+                            // Missing imagePath means it defaults to the generic person icon
+                            name: "You!", 
+                            role: "Future Partner", 
+                          ),
                         ],
                       ),
                     ],
@@ -140,7 +170,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 80),
 
-                // 3. THE PROBLEM (Previously #4)
+                // 3. THE PROBLEM 
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.symmetric(
@@ -188,7 +218,6 @@ class _AboutUsPageState extends State<AboutUsPage> {
                               targetString: "130%", 
                               label: "Population Coverage\nof Reports"
                             ),
-                            // 'Rising' doesn't have a number, so we handle it as simple text
                             RollingStatItem(
                               isVisible: _statsVisible,
                               targetString: "Rising", 
@@ -203,7 +232,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
                 const SizedBox(height: 80),
 
-                // 4. TARGET AUDIENCE (Previously #5)
+                // 4. TARGET AUDIENCE 
                 Stack(
                   children: [
                     Container(
@@ -529,54 +558,70 @@ class _SpinningDigitState extends State<_SpinningDigit> with SingleTickerProvide
   }
 }
 
-class TeamMemberCard extends StatelessWidget {
+class TeamMemberCard extends StatefulWidget {
   final String name;
   final String role;
-  final String description;
   final double width;
+  final String? imagePath; 
 
   const TeamMemberCard({
     super.key, 
     required this.name, 
     required this.role, 
-    required this.description,
     required this.width,
+    this.imagePath, 
   });
 
   @override
+  State<TeamMemberCard> createState() => _TeamMemberCardState();
+}
+
+class _TeamMemberCardState extends State<TeamMemberCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width, 
-      height: 340, 
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5))
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          CircleAvatar(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: widget.width, 
+        height: 240, // Reduced from 340 to better fit the layout without the description
+        padding: const EdgeInsets.all(20),
+        transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+        transformAlignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(_isHovered ? 0.15 : 0.05),
+                blurRadius: _isHovered ? 20 : 10,
+                offset: Offset(0, _isHovered ? 10 : 5))
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            CircleAvatar(
               backgroundColor: Colors.grey[200],
-              radius: 35,
-              child: Icon(Icons.person, color: Colors.grey[400], size: 40)),
-          const SizedBox(height: 20),
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          Text(role,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: Colors.blueAccent, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          Text(description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.5)),
-        ],
+              radius: 60,
+              // If an imagePath is provided, use it. Otherwise, fallback to the Icon.
+              backgroundImage: widget.imagePath != null ? AssetImage(widget.imagePath!) : null,
+              child: widget.imagePath == null 
+                  ? Icon(Icons.person, color: Colors.grey[400], size: 40)
+                  : null,
+            ),
+            const SizedBox(height: 20),
+            Text(widget.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(widget.role,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.blueAccent, fontWeight: FontWeight.w600)),
+          ],
+        ),
       ),
     );
   }
