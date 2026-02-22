@@ -158,7 +158,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           ),
                           TeamMemberCard(
                             width: cardWidth, 
-                            // Missing imagePath means it defaults to the generic person icon
+                            imagePath: 'assets/image/default.jpg',
                             name: "You!", 
                             role: "Future Partner", 
                           ),

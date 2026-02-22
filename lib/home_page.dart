@@ -3,11 +3,12 @@ import 'dart:ui';
 import 'package:flutter/gestures.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; 
-import 'package:model_viewer_plus/model_viewer_plus.dart'; // Add Model Viewer Import
+import 'package:model_viewer_plus/model_viewer_plus.dart'; 
+import 'package:flutter/foundation.dart'; // Added for kReleaseMode
 import 'nav_bar.dart';
 import 'background.dart';
 import 'client_prototype.dart'; 
-import 'package:flutter/foundation.dart'; // Add this to check for Release/Debug mode
+
 class HomePage extends StatefulWidget {
   final String? initialSection;
 
@@ -20,11 +21,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
   
-  // 控制顶部 Promo Banner 的显示状态
+  // NEW STATE: Tracks if the mouse is hovering over the 3D model
+  bool _isHoveringModel = false; 
+  
   bool _showPromoBanner = true;
   late TapGestureRecognizer _promoTapRecognizer;
   
-  // 将 GlobalKey 移入 State 内部，防止多次页面入栈时出现 Duplicate GlobalKeys 报错
   final GlobalKey _sectionMainKey = GlobalKey();
   final GlobalKey _sectionProductKey = GlobalKey();
   final GlobalKey _sectionFeatureKey = GlobalKey();
@@ -34,7 +36,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     
-    // 初始化富文本的点击手势
     _promoTapRecognizer = TapGestureRecognizer()
       ..onTap = () {
         Navigator.push(
@@ -52,7 +53,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _promoTapRecognizer.dispose(); // 释放手势识别器避免内存泄漏
+    _promoTapRecognizer.dispose(); 
     _scrollController.dispose();
     super.dispose();
   }
@@ -83,26 +84,27 @@ class _HomePageState extends State<HomePage> {
           Positioned.fill(
             child: SingleChildScrollView(
               controller: _scrollController,
+              // --- THE FIX ---
+              // Disables webpage scrolling when mouse is over the 3D model
+              physics: _isHoveringModel 
+                  ? const NeverScrollableScrollPhysics() 
+                  : const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
-                  // --- PROMO BANNER (紧贴 NavBar 下方的独立 Block) ---
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                     child: _showPromoBanner
                         ? Column(
                             children: [
-                              // 占位符：精确抵消顶部悬浮 NavBar 的高度 (91px)，确保下方的 Banner 完美衔接在其正下方
                               const SizedBox(height: 91.0),
-                              
-                              // 横幅本体
                               Container(
                                 width: double.infinity,
-                                color: const Color(0xFF1E293B), // 深色横幅背景更像 Snackbar
+                                color: const Color(0xFF1E293B), 
                                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                                 child: Row(
                                   children: [
-                                    const SizedBox(width: 24), // 左侧占位符，用于平衡右侧的关闭图标，使文字绝对居中
+                                    const SizedBox(width: 24), 
                                     Expanded(
                                       child: Text.rich(
                                         TextSpan(
@@ -116,12 +118,12 @@ class _HomePageState extends State<HomePage> {
                                             TextSpan(
                                               text: "here",
                                               style: const TextStyle(
-                                                color: Color(0xFF60A5FA), // 浅蓝色高亮
+                                                color: Color(0xFF60A5FA), 
                                                 decoration: TextDecoration.underline,
                                                 decorationColor: Color(0xFF60A5FA),
                                                 fontWeight: FontWeight.bold,
                                               ),
-                                              recognizer: _promoTapRecognizer, // 绑定点击事件
+                                              recognizer: _promoTapRecognizer, 
                                             ),
                                           ],
                                         ),
@@ -133,7 +135,7 @@ class _HomePageState extends State<HomePage> {
                                       child: GestureDetector(
                                         onTap: () {
                                           setState(() {
-                                            _showPromoBanner = false; // 关闭横幅，整个区块会高度变0，下方的网页自然上移
+                                            _showPromoBanner = false; 
                                           });
                                         },
                                         child: const Icon(Icons.close, size: 20, color: Colors.white70),
@@ -146,28 +148,32 @@ class _HomePageState extends State<HomePage> {
                           )
                         : const SizedBox(width: double.infinity, height: 0),
                   ),
-                  // --------------------------------------------------
 
-                  // 页面主体内容
                   Container(key: _sectionMainKey, child: const HeroSection()),
                   
-                  // Video Section
                   const VideoSection(),
 
-                  Container(key: _sectionProductKey, child: const ProductSection()),
+                  // --- UPDATED PRODUCT SECTION INJECTION ---
+                  // Passes a callback to know when the mouse touches the 3D model
+                  Container(
+                    key: _sectionProductKey, 
+                    child: ProductSection(
+                      onHoverModel: (isHovering) {
+                        setState(() {
+                          _isHoveringModel = isHovering;
+                        });
+                      },
+                    )
+                  ),
+                  
                   Container(key: _sectionFeatureKey, child: const FeaturesSection()),
-                  
-                  // Pricing 移动到了底部
                   Container(key: _sectionPricingKey, child: const PricingSection()),
-                  
-                  // Combined Download & Footer Section
                   const FooterCombinedSection(), 
                 ],
               ),
             ),
           ),
           
-          // 悬浮在最顶部的 NavBar
           Positioned(
             top: 0, left: 0, right: 0,
             child: NavBar(
@@ -183,7 +189,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // ============================================================================
-// 1. HERO SECTION (OPTIMIZED)
+// 1. HERO SECTION 
 // ============================================================================
 class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
@@ -271,7 +277,7 @@ class _HeroSectionState extends State<HeroSection> {
 }
 
 // ============================================================================
-// VIDEO SECTION (OPTIMIZED)
+// VIDEO SECTION 
 // ============================================================================
 class VideoSection extends StatelessWidget {
   const VideoSection({super.key});
@@ -364,10 +370,12 @@ class VideoSection extends StatelessWidget {
 }
 
 // ============================================================================
-// 2. PRODUCT SECTION (OPTIMIZED)
+// 2. PRODUCT SECTION (UPDATED FOR SCROLL FIX)
 // ============================================================================
 class ProductSection extends StatelessWidget {
-  const ProductSection({super.key});
+  final Function(bool)? onHoverModel; // NEW PARAMETER
+
+  const ProductSection({super.key, this.onHoverModel});
 
   @override
   Widget build(BuildContext context) {
@@ -424,45 +432,46 @@ class ProductSection extends StatelessWidget {
           const SizedBox(height: 80),
 
           // --- 3D INTERACTIVE MODEL SECTION ---
-          Container(
-            width: screenWidth * 0.85,
-            height: 500, // Explicit height for the 3D viewer
-            constraints: const BoxConstraints(maxHeight: 700),
-            decoration: BoxDecoration(
-              color: Colors.white, // Solid background to make 3D model pop
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                )
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              // The interactive 3D Model viewer replaces Image.asset
-             // The interactive 3D Model viewer replaces Image.asset
-child: ModelViewer(
-                backgroundColor: const Color(0xFFF5F5F7), 
-                
-                // --- THE FALLBACK FIX ---
-                // If the app is deployed on Render (Release Mode), it uses the double-assets path.
-                // If you are testing locally (Debug Mode), it uses the standard path.
-                src: kReleaseMode 
-                    ? 'assets/assets/models/strap_it.glb' 
-                    : 'assets/models/strap_it.glb', 
-                    
-                alt: 'Interactive 3D model of StrapIt',
-                ar: false, 
-                autoRotate: true, 
-                cameraControls: true, 
-                disableZoom: false,
-                environmentImage: 'neutral', 
-                shadowIntensity: 1.0,        
-                shadowSoftness: 1.0,         
-                exposure: 1.1,               
-                cameraOrbit: "45deg 55deg auto", 
+          MouseRegion(
+            onEnter: (_) => onHoverModel?.call(true),  // Disable page scroll when entering
+            onExit: (_) => onHoverModel?.call(false),  // Enable page scroll when leaving
+            child: Container(
+              width: screenWidth * 0.85,
+              height: 500, 
+              constraints: const BoxConstraints(maxHeight: 700),
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  )
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: ModelViewer(
+                  backgroundColor: const Color(0xFFF5F5F7), 
+                  src: kReleaseMode 
+                      ? 'assets/assets/models/strap_it.glb' 
+                      : 'assets/models/strap_it.glb', 
+                  alt: 'Interactive 3D model of StrapIt',
+                  ar: false, 
+                  autoRotate: true, 
+                  cameraControls: true, 
+                  disableZoom: false,
+                  
+                  // Blocks touch scrolling on Mobile
+                  touchAction: TouchAction.none, 
+
+                  environmentImage: 'neutral', 
+                  shadowIntensity: 1.0,        
+                  shadowSoftness: 1.0,         
+                  exposure: 1.1,               
+                  cameraOrbit: "45deg 55deg auto", 
+                ),
               ),
             ),
           ),
@@ -560,118 +569,96 @@ class _ComponentCard extends StatelessWidget {
 }
 
 // ============================================================================
-// 3. FEATURES SECTION (OPTIMIZED)
+// 3. FEATURES SECTION (UPDATED LAYOUT)
 // ============================================================================
 class FeaturesSection extends StatelessWidget {
   const FeaturesSection({super.key});
+
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
     
+    // The list of feature paragraphs stacked in a Column
+    Widget featuresList = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFeatureItem(
+          "1. Portable & Non-Destructive", 
+          "No drilling or permanent installation. No need to replace existing locks. Leaves no marks on doors or frames."
+        ),
+        const SizedBox(height: 40),
+        _buildFeatureItem(
+          "2. Intrusion Alarm", 
+          "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately."
+        ),
+        const SizedBox(height: 40),
+        _buildFeatureItem(
+          "3. App-Controlled Smart Security", 
+          "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement."
+        ),
+      ],
+    );
+
+    // The single image to the side (or below on mobile)
+    Widget imageContent = ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Image.asset(
+        'assets/image/strapit.png',
+        fit: BoxFit.contain,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+           if (wasSynchronouslyLoaded) return child;
+           return frame == null 
+             ? Container(height: 300, color: Colors.grey[200]) 
+             : child;
+        },
+      ),
+    );
+
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 80, horizontal: isMobile ? 0 : 20),
+      padding: EdgeInsets.symmetric(vertical: 80, horizontal: isMobile ? 20 : 40),
       child: Column(
         children: [
-          const Text("FEATURES", style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)),
+          const Text(
+            "FEATURES", 
+            style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)
+          ),
           const SizedBox(height: 60),
-          _buildFeatureRow(isMobile, "1. Portable & Non-Destructive", "No drilling or permanent installation. No need to replace existing locks. Leaves no marks on doors or frames.", "assets/image/human.jpg", false),
-          _buildFeatureRow(isMobile, "2. Intrusion Alarm", "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately.", "assets/image/crime.jpg", true),
-          _buildFeatureRow(isMobile, "3. App-Controlled Smart Security", "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement.", "assets/image/dontknow.jpg", false),
+          
+          if (isMobile) ...[
+            // Mobile Layout: Column containing features then image
+            featuresList,
+            const SizedBox(height: 60),
+            imageContent,
+          ] else ...[
+            // PC Layout: Row containing features and image side-by-side
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(flex: 5, child: featuresList),
+                const SizedBox(width: 60),
+                Expanded(flex: 4, child: imageContent),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildFeatureRow(bool isMobile, String title, String desc, String img, bool isReversed) {
-    Widget textContent = Column(
+  Widget _buildFeatureItem(String title, String desc) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 20),
+        const SizedBox(height: 15),
         Text(desc, style: const TextStyle(fontSize: 18, color: Colors.black54, height: 1.5)),
       ],
     );
-
-    Widget imageContent = GestureDetector(
-      onTap: () {
-        print("Play feature video for $title");
-      },
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
-            child: Image.asset(
-              img, 
-              height: isMobile ? 300 : 250, 
-              width: double.infinity,
-              fit: BoxFit.cover,
-              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                 if (wasSynchronouslyLoaded) return child;
-                 return frame == null 
-                   ? Container(height: isMobile ? 300 : 250, color: Colors.grey[200]) 
-                   : child;
-              },
-            ),
-          ),
-          Container(
-            height: isMobile ? 300 : 250,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-          ),
-        ],
-      ),
-    );
-
-    if (isMobile) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: Column(
-          children: [
-            imageContent,
-            const SizedBox(height: 30),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: textContent,
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 100),
-        child: Row(
-          children: isReversed 
-            ? [
-                Expanded(child: imageContent), 
-                const SizedBox(width: 40), 
-                Expanded(child: textContent)
-              ]
-            : [
-                Expanded(child: textContent), 
-                const SizedBox(width: 40), 
-                Expanded(child: imageContent)
-              ],
-        ),
-      );
-    }
   }
 }
 
 // ============================================================================
-// 4. PRICING SECTION (MOVED TO BOTTOM)
+// 4. PRICING SECTION
 // ============================================================================
 class PricingSection extends StatelessWidget {
   const PricingSection({super.key});
@@ -748,7 +735,6 @@ class PricingSection extends StatelessWidget {
           
           const SizedBox(height: 100),
           
-          // --- TARGET PARTNER SECTION ---
           const Text("TARGET PARTNERS", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black)),
           const SizedBox(height: 15),
           const Padding(
@@ -1016,14 +1002,13 @@ class FooterCombinedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
 
-    // Modified Download Content: ALWAYS centered
     Widget downloadContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.center, // Forced Center
+      crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
         const Text("GET THE APP", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
         Wrap(
-          alignment: WrapAlignment.center, // Forced Center
+          alignment: WrapAlignment.center, 
           spacing: 15,
           runSpacing: 15,
           children: [
@@ -1034,7 +1019,6 @@ class FooterCombinedSection extends StatelessWidget {
       ],
     );
 
-    // Footer Content 包含带白色底框的 Logo
     Widget footerContent = Column(
       crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.end,
       children: [
@@ -1044,7 +1028,7 @@ class FooterCombinedSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-              child: Image.asset('assets/image/logo.png', width: 24, height: 24, fit: BoxFit.contain),
+              child: Image.asset('assets/image/logo.png', width: 60, height: 60, fit: BoxFit.contain),
             ),
             const SizedBox(width: 10),
             const Text("StrapIt", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
