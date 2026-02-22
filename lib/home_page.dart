@@ -569,91 +569,97 @@ class _ComponentCard extends StatelessWidget {
 }
 
 // ============================================================================
-// 3. FEATURES SECTION (UPDATED LAYOUT)
+// 3. FEATURES SECTION
 // ============================================================================
 class FeaturesSection extends StatelessWidget {
   const FeaturesSection({super.key});
-
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
     
-    // The list of feature paragraphs stacked in a Column
-    Widget featuresList = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFeatureItem(
-          "1. Portable & Non-Destructive", 
-          "No drilling or permanent installation. No need to replace existing locks. Leaves no marks on doors or frames."
-        ),
-        const SizedBox(height: 40),
-        _buildFeatureItem(
-          "2. Intrusion Alarm", 
-          "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately."
-        ),
-        const SizedBox(height: 40),
-        _buildFeatureItem(
-          "3. App-Controlled Smart Security", 
-          "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement."
-        ),
-      ],
-    );
-
-    // The single image to the side (or below on mobile)
-    Widget imageContent = ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Image.asset(
-        'assets/image/strapit.png',
-        fit: BoxFit.contain,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-           if (wasSynchronouslyLoaded) return child;
-           return frame == null 
-             ? Container(height: 300, color: Colors.grey[200]) 
-             : child;
-        },
-      ),
-    );
-
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 80, horizontal: isMobile ? 20 : 40),
+      padding: EdgeInsets.symmetric(vertical: 80, horizontal: isMobile ? 0 : 20),
       child: Column(
         children: [
-          const Text(
-            "FEATURES", 
-            style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)
-          ),
+          const Text("FEATURES", style: TextStyle(color: Colors.blueAccent, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4)),
           const SizedBox(height: 60),
-          
-          if (isMobile) ...[
-            // Mobile Layout: Column containing features then image
-            featuresList,
-            const SizedBox(height: 60),
-            imageContent,
-          ] else ...[
-            // PC Layout: Row containing features and image side-by-side
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(flex: 5, child: featuresList),
-                const SizedBox(width: 60),
-                Expanded(flex: 4, child: imageContent),
-              ],
-            ),
-          ],
+          _buildFeatureRow(isMobile, "1. Portable & Non-Destructive", "No drilling or permanent installation. No need to replace existing locks. Leaves no marks on doors or frames.", "assets/image/portable.png", false),
+          _buildFeatureRow(isMobile, "2. Intrusion Alarm", "Detects forced entry through force sensors. Alarm rings continuously until disabled via app. Forces intruders to leave immediately.", "assets/image/alarm.png", true),
+          _buildFeatureRow(isMobile, "3. App-Controlled Smart Security", "Connects to mobile app. Remote alarm control. Smart protection without smart-lock replacement.", "assets/image/app.png", false),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureItem(String title, String desc) {
-    return Column(
+  Widget _buildFeatureRow(bool isMobile, String title, String desc, String img, bool isReversed) {
+    Widget textContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
+        const SizedBox(height: 20),
         Text(desc, style: const TextStyle(fontSize: 18, color: Colors.black54, height: 1.5)),
       ],
     );
+
+    Widget imageContent = GestureDetector(
+      onTap: () {
+        print("Play feature video for $title");
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(20),
+            child: Image.asset(
+              img, 
+              height: isMobile ? 300 : 250, 
+              width: double.infinity,
+              fit: BoxFit.cover,
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                 if (wasSynchronouslyLoaded) return child;
+                 return frame == null 
+                   ? Container(height: isMobile ? 300 : 250, color: Colors.grey[200]) 
+                   : child;
+              },
+            ),
+          ),
+        
+        ],
+      ),
+    );
+
+    if (isMobile) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: Column(
+          children: [
+            imageContent,
+            const SizedBox(height: 30),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: textContent,
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 100),
+        child: Row(
+          children: isReversed 
+            ? [
+                Expanded(child: imageContent), 
+                const SizedBox(width: 40), 
+                Expanded(child: textContent)
+              ]
+            : [
+                Expanded(child: textContent), 
+                const SizedBox(width: 40), 
+                Expanded(child: imageContent)
+              ],
+        ),
+      );
+    }
   }
 }
 
