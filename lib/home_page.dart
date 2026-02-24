@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; 
 import 'package:model_viewer_plus/model_viewer_plus.dart'; 
 import 'package:flutter/foundation.dart'; // Added for kReleaseMode
+import 'package:url_launcher/url_launcher.dart'; // Added for YouTube navigation
 import 'nav_bar.dart';
 import 'background.dart';
 import 'client_prototype.dart'; 
@@ -85,7 +86,7 @@ class _HomePageState extends State<HomePage> {
             child: SingleChildScrollView(
               controller: _scrollController,
               // --- THE FIX ---
-              // Disables webpage scrolling when mouse is over the 3D model
+              // Disables webpage scrolling when interacting with the 3D model
               physics: _isHoveringModel 
                   ? const NeverScrollableScrollPhysics() 
                   : const AlwaysScrollableScrollPhysics(),
@@ -315,7 +316,7 @@ class VideoSection extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(30),
                     child: Image.asset(
-                      'assets/image/hotel.jpg',
+                      'assets/image/coverpage.png', 
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
@@ -336,8 +337,14 @@ class VideoSection extends StatelessWidget {
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
-                      onTap: () {
-                         print("Play Video Tapped");
+                      onTap: () async {
+                         final Uri youtubeUrl = Uri.parse('https://www.youtube.com/'); 
+                         
+                         if (await canLaunchUrl(youtubeUrl)) {
+                           await launchUrl(youtubeUrl, mode: LaunchMode.externalApplication);
+                         } else {
+                           debugPrint("Could not launch $youtubeUrl");
+                         }
                       },
                       child: Container(
                         width: 90,
@@ -373,7 +380,7 @@ class VideoSection extends StatelessWidget {
 // 2. PRODUCT SECTION (UPDATED FOR SCROLL FIX)
 // ============================================================================
 class ProductSection extends StatelessWidget {
-  final Function(bool)? onHoverModel; // NEW PARAMETER
+  final Function(bool)? onHoverModel; 
 
   const ProductSection({super.key, this.onHoverModel});
 
@@ -432,45 +439,51 @@ class ProductSection extends StatelessWidget {
           const SizedBox(height: 80),
 
           // --- 3D INTERACTIVE MODEL SECTION ---
-          MouseRegion(
-            onEnter: (_) => onHoverModel?.call(true),  // Disable page scroll when entering
-            onExit: (_) => onHoverModel?.call(false),  // Enable page scroll when leaving
-            child: Container(
-              width: screenWidth * 0.85,
-              height: 500, 
-              constraints: const BoxConstraints(maxHeight: 700),
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  )
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: ModelViewer(
-                  backgroundColor: const Color(0xFFF5F5F7), 
-                  src: kReleaseMode 
-                      ? 'assets/assets/models/strap_it.glb' 
-                      : 'assets/models/strap_it.glb', 
-                  alt: 'Interactive 3D model of StrapIt',
-                  ar: false, 
-                  autoRotate: true, 
-                  cameraControls: true, 
-                  disableZoom: false,
-                  
-                  // Blocks touch scrolling on Mobile
-                  touchAction: TouchAction.none, 
+          // ADDED: Listener for touch events on mobile
+          Listener(
+            onPointerDown: (_) => onHoverModel?.call(true),   // Lock scroll on touch start
+            onPointerUp: (_) => onHoverModel?.call(false),    // Unlock scroll on touch release
+            onPointerCancel: (_) => onHoverModel?.call(false),// Unlock scroll if touch is canceled
+            child: MouseRegion(
+              onEnter: (_) => onHoverModel?.call(true),  // Disable page scroll when entering (Desktop)
+              onExit: (_) => onHoverModel?.call(false),  // Enable page scroll when leaving (Desktop)
+              child: Container(
+                width: screenWidth * 0.85,
+                height: 500, 
+                constraints: const BoxConstraints(maxHeight: 700),
+                decoration: BoxDecoration(
+                  color: Colors.white, 
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: ModelViewer(
+                    backgroundColor: const Color(0xFFF5F5F7), 
+                    src: kReleaseMode 
+                        ? 'assets/assets/models/strap_it.glb' 
+                        : 'assets/models/strap_it.glb', 
+                    alt: 'Interactive 3D model of StrapIt',
+                    ar: false, 
+                    autoRotate: true, 
+                    cameraControls: true, 
+                    disableZoom: false,
+                    
+                    // Blocks touch scrolling natively
+                    touchAction: TouchAction.none, 
 
-                  environmentImage: 'neutral', 
-                  shadowIntensity: 1.0,        
-                  shadowSoftness: 1.0,         
-                  exposure: 1.1,               
-                  cameraOrbit: "45deg 55deg auto", 
+                    environmentImage: 'neutral', 
+                    shadowIntensity: 1.0,        
+                    shadowSoftness: 1.0,         
+                    exposure: 1.1,               
+                    cameraOrbit: "45deg 55deg auto", 
+                  ),
                 ),
               ),
             ),
