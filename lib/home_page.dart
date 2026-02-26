@@ -280,12 +280,24 @@ class _HeroSectionState extends State<HeroSection> {
 // ============================================================================
 // VIDEO SECTION 
 // ============================================================================
-class VideoSection extends StatelessWidget {
+// ============================================================================
+// VIDEO SECTION 
+// ============================================================================
+class VideoSection extends StatefulWidget {
   const VideoSection({super.key});
+
+  @override
+  State<VideoSection> createState() => _VideoSectionState();
+}
+
+class _VideoSectionState extends State<VideoSection> {
+  bool _isVideoHovered = false;
+  bool _isPlayButtonHovered = false;
 
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 900;
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
       child: Column(
@@ -296,75 +308,91 @@ class VideoSection extends StatelessWidget {
           ),
           const SizedBox(height: 40),
           Center(
-            child: Container(
-              height: isMobile ? 250 : 500,
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 900),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Image.asset(
-                      'assets/image/coverpage.png', 
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                        if (wasSynchronouslyLoaded) return child;
-                        return frame == null 
-                          ? Container(color: Colors.grey[200]) 
-                          : child;
-                      },
-                    ),
-                  ),
-                  Container(
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) => setState(() => _isVideoHovered = true),
+              onExit: (_) => setState(() => _isVideoHovered = false),
+              child: GestureDetector(
+                onTap: () async {
+                  final Uri youtubeUrl = Uri.parse('https://www.youtube.com/watch?v=8xiPE_AEows'); 
+                  
+                  if (await canLaunchUrl(youtubeUrl)) {
+                    await launchUrl(youtubeUrl, mode: LaunchMode.externalApplication);
+                  } else {
+                    debugPrint("Could not launch $youtubeUrl");
+                  }
+                },
+                child: AnimatedScale(
+                  scale: _isVideoHovered ? 1.03 : 1.0, 
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: Container(
+                    // The outer container retains its size and acts as the white background
+                    height: isMobile ? 250 : 500,
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxWidth: 900),
                     decoration: BoxDecoration(
+                      color: Colors.white, 
                       borderRadius: BorderRadius.circular(30),
-                      color: Colors.black.withOpacity(0.3),
                     ),
-                  ),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () async {
-                         final Uri youtubeUrl = Uri.parse('https://www.youtube.com/'); 
-                         
-                         if (await canLaunchUrl(youtubeUrl)) {
-                           await launchUrl(youtubeUrl, mode: LaunchMode.externalApplication);
-                         } else {
-                           debugPrint("Could not launch $youtubeUrl");
-                         }
-                      },
-                      child: Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00C853),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            )
-                          ],
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Explicitly sizing the image width and height directly
+                        SizedBox(
+                          width: isMobile ? 320 : 400, 
+                          height: isMobile ? 180 : 200, 
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.asset(
+                                  'assets/image/coverpage.png', 
+                                  fit: BoxFit.cover,
+                                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                    if (wasSynchronouslyLoaded) return child;
+                                    return frame == null 
+                                      ? Container(color: Colors.grey[200]) 
+                                      : child;
+                                  },
+                                ),
+                              ),
+                           
+                            ],
+                          ),
                         ),
-                        child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 55),
-                      ),
+                        
+                        // Play button
+                        MouseRegion(
+                          onEnter: (_) => setState(() => _isPlayButtonHovered = true),
+                          onExit: (_) => setState(() => _isPlayButtonHovered = false),
+                          child: AnimatedScale(
+                            scale: _isPlayButtonHovered ? 1.15 : 1.0, 
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutBack,
+                            child: Container(
+                              width: 90,
+                              height: 90,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00C853),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  )
+                                ],
+                              ),
+                              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 55),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
